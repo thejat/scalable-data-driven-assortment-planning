@@ -8,7 +8,7 @@ Created on Fri Jan 29 02:40:04 2016
 import numpy
 import sys
 import time
-
+from capAst_oracle import calcRev
 
 #prod is the number of products
 #C is the capacity
@@ -98,6 +98,6 @@ def capAst_paat(prod, C, p, v):
     print "Products in the optimal assortment are", optSet 
     print "Optimal revenue is", maxRev
     print "Time taken for running Paat's algorithm is", timeTaken       
-    return maxRev, optSet;       
+    return maxRev, optSet, timeTaken;       
         
         
