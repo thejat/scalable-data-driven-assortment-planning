@@ -29,24 +29,23 @@ import os
 
 #parameters required
 #prod = 3000 #number of products
-C= 10   #capacity of assortment
-price_range = 100; #denotes highest possible price of a product
+C= 50   #capacity of assortment
+price_range = 1000; #denotes highest possible price of a product
 eps = 0.1 #tolerance
 N = 50 #number of times Monte Carlo simulation will run
-repPV = N #number of times a p, v pair is repeated
+repPV = 1 #number of times a p, v pair is repeated
 
 #skLearn LSH parameters
 #nCand = 100
-nEst = 50
+nEst = 100
 
 #nEstList = [20,40,60,80]
-nCandList= [50,100,150,200]
+nCandList= [50,200]
 #nCandList= [20]#[50,100]
 
 #prodList = np.array([20,40,60,80] + list(np.arange(100,1000,200)) + [1000,2000])
-#prodList = [20,   40,   60,   80,  100]
-prodList = [20 ,50, 100, 200, 400, 600, 800, 1000]
-#prodList = [300,  500,  700,  900, 1000, 2000]
+prodList = [100, 200, 400, 600, 800, 1000, 2000, 5000, 10000,15000,20000]
+#prodList = [1000,20000]
 
 
 saveFolder = 'algoStats/stats_pmax_' + str(price_range)+'_C_'+str(C) 
@@ -75,8 +74,8 @@ corrSetLSHNN_mean, setOlpLSHNN_mean, revPctErrLSHNN_max, revPctErrLSHNN_mean, re
 
 
 badError = 0
-
 i = 0
+t1= time.time()
 for prod in prodList:
     
     #building skLSH and exact NN models
@@ -85,27 +84,52 @@ for prod in prodList:
     while(t<N):
         #print 'Iteration number is ', str(t)
         #generating the price and customer preference vector
-        p = np.random.uniform(0,price_range, prod) # create an array of n+1 uniform random numbers between 0 and price_range  
+    
+        #p = np.random.uniform(0,price_range, prod) # create an array of n+1 uniform random numbers between 0 and price_range  
+        p = price_range * np.random.beta(2,5,prod)        
         p = np.around(p, decimals =2)
         p = np.insert(p,0,0) #inserting 0 as the first element to denote the price of the no purchase option
         #v = np.random.rand(prod+1) #v is a prod+1 length vector as the first element signifies the customer preference for the no purchase option
          
         dbListskLSH= []
         for nCand in nCandList:
-            KList, dbListskLSHTemp, build_time_lshf, normConstList = preprocess(prod, C, p,  eps,  'skLsh', nEst=nEst,nCand=nCand)
+            KList, dbListskLSHTemp, build_time_lshf, normConstList = preprocess(prod, C, p,  eps,  'skLSH_singleLSH', nEst=nEst,nCand=nCand)
             dbListskLSH.append(dbListskLSHTemp)
             
-        KList, dbListExact, build_time_exactNN, normConstList = preprocess(prod, C, p,  eps,  'exactNN')    
+        KList, dbListExact, build_time_exactNN, normConstList = preprocess(prod, C, p,  eps,  'exactNN_single')    
         
         #KList and normConstList don't depend on the NN algorithm and parameters like nEst and nCand        
         
         for s in range(repPV):
             v = np.random.rand(prod+1) #v is a prod+1 length vector as the first element signifies the customer preference for the no purchase option
-            revExactNN[i, t], maxSetExactNN, timeExactNN[i, t] = capAst_NNalgo(prod, C, p, v,  eps,  algo = 'exactNN',  preprocessed =True,KList=KList, dbList =dbListExact, normConstList=normConstList)
-            #revExactNN[i, t], maxSet, timeExactNN[i, t] = capAst_NNalgo(prod, C, p, v,  eps,  algo = 'exactNN',  preprocessed =False)            
-            revPaat[i, t], maxSetPaat, timePaat[i, t] = capAst_paat(prod, C, p, v)
-            maxSetPaat = set(maxSetPaat.astype(int))
+            v = np.around(v, decimals =7)
             
+            #Ensure that there are no duplicate entires in v - required for Paat's algorithm
+            u, indices = np.unique(v, return_inverse=True)   
+            ct = 1
+            while(not(len(u)== prod+1)):
+                #print len(u)
+                extraSize = prod+1 - len(u)
+                newEnt = np.random.rand(extraSize)
+                newEnt = np.around(newEnt, decimals =2) 
+                v= np.concatenate((u,newEnt))
+                u, indices = np.unique(v, return_inverse=True)
+                ct =ct+1
+            print 'Number of times v had to be generated', ct    
+                
+            while(v[0]==0):
+                v[0] = np.random.rand(1)
+             
+            revExactNN[i, t], maxSetExactNN, timeExactNN[i, t] = capAst_NNalgo(prod, C, p, v,  eps,  algo = 'exactNN_single',  preprocessed =True,KList=KList, dbList =dbListExact, normConstList=normConstList)
+            #revExactNN[i, t], maxSet, timeExactNN[i, t] = capAst_NNalgo(prod, C, p, v,  eps,  algo = 'exactNN',  preprocessed =False)            
+            if(prod <= 1000):      #for less than 1000 products calculate Paat's optimal sets            
+                revPaat[i, t], maxSetPaat, timePaat[i, t] = capAst_paat(prod, C, p, v)
+                maxSetPaat = set(maxSetPaat.astype(int))
+            else: #for more than 1000 products, it is tricky to run Paat's algorithm, so we use exactNN answers as a proxy for the true answers
+                revPaat[i, t]= revExactNN[i, t]
+                maxSetPaat = set(maxSetExactNN.astype(int))
+                timePaat[i, t] = timeExactNN[i, t]
+                
             setOlpExactNN[i,t]  = len(maxSetPaat.intersection(maxSetExactNN))
             corrSetExactNN[i,t] =   int(setOlpExactNN[i,t]==  len(maxSetPaat))
             setOlpExactNN[i,t] = setOlpExactNN[i,t]/len(maxSetPaat) #to normalize
@@ -115,7 +139,7 @@ for prod in prodList:
     
             j = 0
             for nCand in nCandList:
-                 revLSHNN[i,j,t], maxSetLSHNN, timeLSHNN[i, j,t] = capAst_NNalgo(prod, C, p, v,  eps,  algo = 'skLSH', nEst =nEst, nCand =nCand , preprocessed =True,KList=KList, dbList =dbListskLSH[j], normConstList=normConstList) 
+                 revLSHNN[i,j,t], maxSetLSHNN, timeLSHNN[i, j,t] = capAst_NNalgo(prod, C, p, v,  eps,  algo = 'skLSH_singleLSH', nEst =nEst, nCand =nCand , preprocessed =True,KList=KList, dbList =dbListskLSH[j], normConstList=normConstList) 
                  #revLSHNN[i,j,t], maxSet, timeLSHNN[i, j,t] = capAst_NNalgo(prod, C, p, v,  eps,  algo = 'skLSH', nEst =nEst, nCand =nCand , preprocessed =False) 
                  revPctErrLSHNN[i,j,t] = (revPaat[i, t] - revLSHNN[i,j,t])/revPaat[i, t]
                  setOlpLSHNN[i,j,t]  = len(maxSetPaat.intersection(maxSetLSHNN))
@@ -148,6 +172,7 @@ for prod in prodList:
 
     print 'Calculations done for number of products', prod  
     np.savez(saveFolder + '/stats_prod_'+ str(prod), setOlpExactNN=setOlpExactNN[i], corrSetExactNN=corrSetExactNN[i],setOlpExactNN_mean=setOlpExactNN_mean[i], corrSetExactNN_mean=corrSetExactNN_mean[i], setOlpLSHNN=setOlpLSHNN[i], corrSetLSHNN=corrSetLSHNN[i],setOlpLSHNN_mean=setOlpLSHNN_mean[i], corrSetLSHNN_mean=corrSetLSHNN_mean[i], revPctErrExactNN = revPctErrExactNN[i], revPctErrExactNN_mean = revPctErrExactNN_mean[i], revPctErrExactNN_std = revPctErrExactNN_std[i], revPctErrLSHNN_mean = revPctErrLSHNN_mean[i],  revPctErrLSHNN_std = revPctErrLSHNN_std[i]  , timeExactNN_mean = timeExactNN_mean[i] , timeExactNN_std =timeExactNN_std[i], timePaat_mean =timePaat_mean[i], timePaat_std = timePaat_std[i], timeLSHNN_mean = timeLSHNN_mean[i], timeLSHNN_std = timeLSHNN_std[i], revPctErrLSHNN_max=revPctErrLSHNN_max[i], revPctErrExactNN_max=revPctErrExactNN_max[i] )
+    #np.savez(saveFolder + '/rawData_prod_'+ str(prod),  )    
     print 'Time taken to run is', time.time() - t0    
     i = i +1
 
@@ -171,3 +196,4 @@ np.savez(saveFolder + '/allStats_pmax_' + str(price_range)+'_C_'+str(C) , setOlp
     
 
 print 'Bad error number is ',   badError 
+print 'Time taken is', time.time()  - t1

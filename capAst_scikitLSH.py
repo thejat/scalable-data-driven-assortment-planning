@@ -145,7 +145,7 @@ def calcNN(v,p,K, prod, C, KList, dbList, normConstList,algo):
     real_dist = np.linalg.norm(query)*(1-distList)[0] 
     real_dist=real_dist * normConstList[idx[0][0]]
 
-    return sum(real_dist), approx_neighbors_lshf[0][real_neighbours[0]] + 1 # + 1 is done to identify the product as the indexing would have started from 0
+    return sum(real_dist[real_neighbours[0]]), approx_neighbors_lshf[0][real_neighbours[0]] + 1 # + 1 is done to identify the product as the indexing would have started from 0
         
   
 

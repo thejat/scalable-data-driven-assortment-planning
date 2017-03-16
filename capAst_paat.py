@@ -33,8 +33,12 @@ def capAst_paat(prod, C, p, v):
                    
     ix = numpy.argsort(ispt.flatten())        #sorted indexing in the flattened array
     ret = (n*n - n)/2 #number of relevant items, others are all inf
-    pos = [(i/n, i%n) for i in ix[:ret]] # stores the sorted indices
-    #if three or more lines intersect at a point, then I am not sure how the above ordering would work. This needs to be checked
+    #pos2 = [[i/n, i%n] for i in ix[:ret]] # stores the sorted indices
+    #if three or more lines intersect at a point, then I am not sure how the above ordering would work. This needs to be checked 
+
+    pos = numpy.unravel_index(ix[:ret], numpy.shape(ispt))
+    pos = numpy.column_stack((pos[0], pos[1]))
+
     
     numIspt = len(pos) #storing the number of intersection points
     
@@ -54,9 +58,18 @@ def capAst_paat(prod, C, p, v):
         sigma[:,l] = sigma[:,l-1]
         B[:, l] = B[:, l-1]
         
+        #this is to ensure that the first coordinate is smaller -not sure if the below line is foolproof   
+        if(pos[l-1][0] > pos[l-1][1]):
+#            tmpVar = pos[l-1][1]
+#            pos[l-1][1] = pos[l-1][0]
+#            pos[l-1][0]  =tmpVar
+            pos[l-1][0], pos[l-1][1] = pos[l-1][1], pos[l-1][0]
+        #print 'position switched'
+        
         if pos[l-1][0] != 0:
             idx1 = numpy.where(sigma[:,l-1] == pos[l-1][0])
             idx2 = numpy.where(sigma[:,l-1] == pos[l-1][1])
+            #print sigma[idx1, l-1], sigma[idx2, l-1]
             sigma[idx1, l], sigma[idx2, l] =  sigma[idx2, l-1], sigma[idx1, l-1]
             
         else:
