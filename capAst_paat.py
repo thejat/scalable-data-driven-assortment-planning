@@ -16,7 +16,7 @@ from capAst_oracle import calcRev
 #v is the customer preference vector with the first entry denoting the parameter for the no-purchase option
 #The code below assumes v to be of length (number of products +1) and p to be of length number of products
 
-#Ensure that the entries of v are distinct
+#Ensure that the entries of v are distinct otherwise there might be issues
 def capAst_paat(prod, C, p, v):
     st = time.time()
     n = prod +1
