@@ -2,3 +2,8 @@
 *.pyc
 temp/
 algoStats/
+output/
+billion_price_data*
+derby*
+document*
+metastore_db/

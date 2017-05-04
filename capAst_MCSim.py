@@ -18,7 +18,7 @@ import numpy as np
 from capAst_scikitLSH import capAst_NNalgo, preprocess
 from capAst_paat import capAst_paat
 import time
-import os
+import os, random
    
  #match answers with the test API
    #dataset = genDataSet(p, K, prod, C)
@@ -34,21 +34,35 @@ price_range = 1000; #denotes highest possible price of a product
 eps = 0.1 #tolerance
 N = 50 #number of times Monte Carlo simulation will run
 repPV = 1 #number of times a p, v pair is repeated
+genMethod = 'bppData' #specifies the method of generating price vectors
+
+fname = os.getcwd() + '/billion_price_data/processed_data/usa_2/numProducts_stats.npz'
+dateList = np.load(fname)['good_dates']
+
+
+fileName = os.getcwd() + '/billion_price_data/processed_data/usa_2/prices_'
+fileNameList = []
+#for day in range(10,31):
+#    for month in ['jun', 'jul', 'aug']:
+#        chosenDay = str(day) + month + '2009'
+for chosenDay in dateList:
+    fileNameList.append(fileName+ chosenDay+'.npz')
+
 
 #skLearn LSH parameters
 #nCand = 100
 nEst = 100
 
 #nEstList = [20,40,60,80]
-nCandList= [50,200]
+nCandList= [50,200,500]
 #nCandList= [20]#[50,100]
 
 #prodList = np.array([20,40,60,80] + list(np.arange(100,1000,200)) + [1000,2000])
 prodList = [100, 200, 400, 600, 800, 1000, 2000, 5000, 10000,15000,20000]
-#prodList = [1000,20000]
+#prodList = [100,200]
 
 
-saveFolder = 'algoStats/stats_pmax_' + str(price_range)+'_C_'+str(C) 
+saveFolder = 'algoStats_bpp/stats_pmax_' + str(price_range)+'_C_'+str(C) 
 if not os.path.exists(saveFolder):
         os.makedirs(saveFolder)
 
@@ -71,7 +85,18 @@ timePaat = np.zeros((np.shape(prodList)[0], N))
 corrSetExactNN_mean, setOlpExactNN_mean,  revPctErrExactNN_max, revPctErrExactNN_mean, revPctErrExactNN_std, timeExactNN_mean, timeExactNN_std, timePaat_mean, timePaat_std =  (np.zeros( np.shape(prodList)[0]) for i in range(9))
 corrSetLSHNN_mean, setOlpLSHNN_mean, revPctErrLSHNN_max, revPctErrLSHNN_mean, revPctErrLSHNN_std, timeLSHNN_mean, timeLSHNN_std =  (np.zeros(( np.shape(prodList)[0], np.shape(nCandList)[0])) for i in range(7))
 
-
+def get_price(price_range, prod, genMethod, iterNum = 0, fileNameList=None):
+#genMethod can take values 'uniform', 'beta', 'bppData'
+    if(genMethod=='uniform'):
+        p = np.random.uniform(0,price_range, prod)
+    elif(genMethod=='beta'):
+        p = price_range * np.random.beta(2,5,prod) 
+    elif(genMethod=='bppData'):
+        allPrices = np.load(fileNameList[iterNum])['arr_0']
+        allValidPrices = allPrices[allPrices < price_range]
+        p = random.sample(allValidPrices, prod)
+    return p    
+        
 
 badError = 0
 i = 0
@@ -86,9 +111,14 @@ for prod in prodList:
         #generating the price and customer preference vector
     
         #p = np.random.uniform(0,price_range, prod) # create an array of n+1 uniform random numbers between 0 and price_range  
-        p = price_range * np.random.beta(2,5,prod)        
+        #p = price_range * np.random.beta(2,5,prod)
+        p = get_price(price_range, prod, genMethod,t, fileNameList)
         p = np.around(p, decimals =2)
         p = np.insert(p,0,0) #inserting 0 as the first element to denote the price of the no purchase option
+        if(genMethod=='bppData'):
+            max_Price = np.max(p)
+            if(max_Price > price_range):
+                print 'Maximum price exceeds perrmissible price range '
         #v = np.random.rand(prod+1) #v is a prod+1 length vector as the first element signifies the customer preference for the no purchase option
          
         dbListskLSH= []
@@ -176,7 +206,7 @@ for prod in prodList:
     print 'Time taken to run is', time.time() - t0    
     i = i +1
 
-np.savez(saveFolder + '/allStats_pmax_' + str(price_range)+'_C_'+str(C) , setOlpExactNN_mean=setOlpExactNN_mean, corrSetExactNN_mean=corrSetExactNN_mean, setOlpLSHNN_mean=setOlpLSHNN_mean, corrSetLSHNN_mean=corrSetLSHNN_mean,  revPctErrExactNN_mean = revPctErrExactNN_mean, revPctErrExactNN_std = revPctErrExactNN_std, revPctErrLSHNN_mean = revPctErrLSHNN_mean,  revPctErrLSHNN_std = revPctErrLSHNN_std  , timeExactNN_mean = timeExactNN_mean , timeExactNN_std =timeExactNN_std, timePaat_mean =timePaat_mean, timePaat_std = timePaat_std, timeLSHNN_mean = timeLSHNN_mean, timeLSHNN_std = timeLSHNN_std )
+np.savez(saveFolder + '/allStats_pmax_' + str(price_range)+'_C_'+str(C) , setOlpExactNN_mean=setOlpExactNN_mean, corrSetExactNN_mean=corrSetExactNN_mean, setOlpLSHNN_mean=setOlpLSHNN_mean, corrSetLSHNN_mean=corrSetLSHNN_mean,  revPctErrExactNN_mean = revPctErrExactNN_mean, revPctErrExactNN_max = revPctErrExactNN_max, revPctErrExactNN_std = revPctErrExactNN_std, revPctErrLSHNN_mean = revPctErrLSHNN_mean,  revPctErrLSHNN_std = revPctErrLSHNN_std  , revPctErrLSHNN_max = revPctErrLSHNN_max  , timeExactNN_mean = timeExactNN_mean , timeExactNN_std =timeExactNN_std, timePaat_mean =timePaat_mean, timePaat_std = timePaat_std, timeLSHNN_mean = timeLSHNN_mean, timeLSHNN_std = timeLSHNN_std )
 
 
 #revPctErrExactNN = (revPaat - revExactNN)/revPaat    
