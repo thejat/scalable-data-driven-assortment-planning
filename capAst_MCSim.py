@@ -1,17 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Oct 31 21:21:38 2016
-
-@author: Deeksha
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Feb 11 12:06:56 2016
-
-@author: Deeksha
-"""
-
 import numpy as np
 #from capAst_approx import capAst_LSH
 #from capAst_oracle import capAst_oracle
@@ -207,23 +193,6 @@ for prod in prodList:
     i = i +1
 
 np.savez(saveFolder + '/allStats_pmax_' + str(price_range)+'_C_'+str(C) , setOlpExactNN_mean=setOlpExactNN_mean, corrSetExactNN_mean=corrSetExactNN_mean, setOlpLSHNN_mean=setOlpLSHNN_mean, corrSetLSHNN_mean=corrSetLSHNN_mean,  revPctErrExactNN_mean = revPctErrExactNN_mean, revPctErrExactNN_max = revPctErrExactNN_max, revPctErrExactNN_std = revPctErrExactNN_std, revPctErrLSHNN_mean = revPctErrLSHNN_mean,  revPctErrLSHNN_std = revPctErrLSHNN_std  , revPctErrLSHNN_max = revPctErrLSHNN_max  , timeExactNN_mean = timeExactNN_mean , timeExactNN_std =timeExactNN_std, timePaat_mean =timePaat_mean, timePaat_std = timePaat_std, timeLSHNN_mean = timeLSHNN_mean, timeLSHNN_std = timeLSHNN_std )
-
-
-#revPctErrExactNN = (revPaat - revExactNN)/revPaat    
-#revPctErrExactNN_mean = np.mean(revPctErrExactNN, axis=1)    
-#revPctErrExactNN_std = np.std(revPctErrExactNN, axis=1) 
-#
-#revPctErrLSHNN_mean = np.mean(revPctErrLSHNN, axis=2)    
-#revPctErrLSHNN_std = np.std(revPctErrLSHNN, axis=2)  
-#
-#timeExactNN_mean = np.mean(timeExactNN, axis=1)
-#timePaat_mean = np.mean(timePaat, axis=1)
-#timeLSHNN_mean = np.mean(timeLSHNN, axis=2)
-#timeExactNN_std = np.std(timeExactNN, axis=1)
-#timeLSHNN_std = np.std(timeLSHNN, axis=1)
-#timePaat_std = np.std(timePaat, axis=1)
-#    
-    
 
 print 'Bad error number is ',   badError 
 print 'Time taken is', time.time()  - t1

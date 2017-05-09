@@ -7,3 +7,4 @@ billion_price_data*
 derby*
 document*
 metastore_db/
+*.log
