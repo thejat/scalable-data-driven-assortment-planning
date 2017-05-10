@@ -35,12 +35,12 @@ def capAst_oracle(prod, C, p, v):
             maxRevSet = ast
     timeTaken = time.time() - st      
     
-    print " " 
-    print "Results for oracle"
+    # print " " 
+    # print "Results for oracle"
     print "Products in the optimal assortment are", maxRevSet 
-    print "Optimal revenue is", maxRev
-    print 'Time taken for running the oracle is', timeTaken
+    # print "Optimal revenue is", maxRev
+    # print 'Time taken for running the oracle is', timeTaken
     
-    return maxRev, maxRevSet
+    return maxRev, maxRevSet,timeTaken
         
         
