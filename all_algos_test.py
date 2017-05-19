@@ -118,7 +118,7 @@ def generate_instance(price_range,prod,genMethod,iterNum):
 
   return p,v
 
-def get_log_dict(prodList,N,algos,C,price_range,eps):
+def get_log_dict(prodList,N,algos,C,price_range,eps,genMethod):
 
   def matrices(prodList,N):
     names1 = ['revPctErr','setOlp','corrSet','rev','time']
@@ -131,7 +131,7 @@ def get_log_dict(prodList,N,algos,C,price_range,eps):
     return output
 
   loggs = {}
-  loggs['additional'] = {'prodList':prodList,'algonames':algos.keys(),'N':N,'eps':eps,'price_range':price_range,'C':C}
+  loggs['additional'] = {'prodList':prodList,'algonames':algos.keys(),'N':N,'eps':eps,'price_range':price_range,'C':C,'genMethod':genMethod}
   for algoname in algos:
     loggs[algoname] = matrices(prodList,N)
   return loggs
@@ -168,7 +168,7 @@ def overlap(maxSet,maxSetBenchmark):
 
 
 def main():
-  loggs = get_log_dict(prodList,N,algos,C,price_range,eps)
+  loggs = get_log_dict(prodList,N,algos,C,price_range,eps,genMethod)
   badError = 0
   t1= time.time()
   for i,prod in enumerate(prodList):
