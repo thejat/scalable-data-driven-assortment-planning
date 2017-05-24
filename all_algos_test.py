@@ -42,7 +42,6 @@ def capAst_AssortExact(prod,C,p,v,meta):
   rev, maxSet, time = capAst_NNalgo(prod, C, p, v, 
     meta['eps'],  
     algo = 'exactNN_single',
-    preprocessed =True,
     KList=meta['KList'], 
     dbList=meta['dbListExact'], 
     normConstList=meta['normConstList'])
@@ -55,23 +54,10 @@ def capAst_AssortLSH(prod,C,p,v,meta):
     algo = 'skLSH_singleLSH', 
     nEst =meta['nEst'], 
     nCand =meta['nCand'] , 
-    preprocessed =True,
     KList=meta['KList'], 
     dbList =meta['dbListskLSH'], 
     normConstList=meta['normConstList']) 
   return rev,maxSet,time
-
-#parameters required
-np.random.seed(10)
-C           = 50 # 10 # #capacity of assortment
-price_range = 1000      #denotes highest possible price of a product
-eps         = 0.1       #tolerance
-N           = 30 # 2 #  #number of times Monte Carlo simulation will run
-prodList    = [100, 200, 400, 600, 800, 1000,5000,10000,20000] #[10000,20000] #[100,200] # 
-genMethod   = 'synthetic' #'bppData' #
-algos = {'Assort-Exact':capAst_AssortExact,'Assort-LSH':capAst_AssortLSH,'Adxopt':capAst_adxopt2,'LP':capAst_LP2,'Static-MNL':capAst_paat2}
-benchmark = 'Static-MNL'
-
 
 def get_real_price(price_range, prod, iterNum = 0):
   fname = os.getcwd() + '/billion_price_data/processed_data/usa_2/numProducts_stats.npz'
@@ -115,7 +101,7 @@ def generate_instance(price_range,prod,genMethod,iterNum):
 
   return p,v
 
-def get_log_dict(prodList,N,algos,C,price_range,eps,genMethod):
+def get_log_dict(prodList,N,algos,price_range,eps,genMethod,C=None):
 
   def matrices(prodList,N):
     names1 = ['revPctErr','setOlp','corrSet','rev','time']
@@ -128,7 +114,9 @@ def get_log_dict(prodList,N,algos,C,price_range,eps,genMethod):
     return output
 
   loggs = {}
-  loggs['additional'] = {'prodList':prodList,'algonames':algos.keys(),'N':N,'eps':eps,'price_range':price_range,'C':C,'genMethod':genMethod}
+  loggs['additional'] = {'prodList':prodList,'algonames':algos.keys(),'N':N,'eps':eps,'price_range':price_range,'genMethod':genMethod}
+  if C is not None:
+      loggs['additional']['C'] = C
   for algoname in algos:
     loggs[algoname] = matrices(prodList,N)
   return loggs
@@ -148,24 +136,38 @@ def log_wrapper(algos,loggs,benchmark,i):
 
   return loggs
 
-def overlap_wrapper(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchmark):
+def overlap_wrapper(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchmark,eps):
+
+  def overlap(maxSet,maxSetBenchmark):
+    setOlp  = len(maxSetBenchmark.intersection(maxSet))
+    corrSet = int(setOlp==  len(maxSetBenchmark))
+    setOlp  = setOlp*1.0/len(maxSetBenchmark) #to normalize
+    return setOlp,corrSet
+
   if benchmark in algos:
     for algoname in algos:
-      print algoname
+      print 'Collecting benchmarks for ',algoname
       loggs[algoname]['setOlp'][i,t],loggs[algoname]['corrSet'][i,t] = overlap(maxSet,maxSetBenchmark)
       if(loggs[benchmark]['rev'][i,t] - loggs[algoname]['rev'][i,t] > eps ):
           badError = badError +1
   return loggs,badError
 
-def overlap(maxSet,maxSetBenchmark):
-  setOlp  = len(maxSetBenchmark.intersection(maxSet))
-  corrSet = int(setOlp==  len(maxSetBenchmark))
-  setOlp  = setOlp/len(maxSetBenchmark) #to normalize
-  return setOlp,corrSet
-
 
 def main():
-  loggs = get_log_dict(prodList,N,algos,C,price_range,eps,genMethod)
+
+  #parameters required
+  np.random.seed(10)
+  C           = 50 # 10 # #capacity of assortment
+  price_range = 1000      #denotes highest possible price of a product
+  eps         = 0.1       #tolerance
+  N           = 2 #30 #  #number of times Monte Carlo simulation will run
+  prodList    = [100,200]#[100, 200, 400, 600, 800, 1000,5000,10000,20000] #[10000,20000] #[100,200] # 
+  genMethod   = 'synthetic' #'bppData' #
+  algos = {'Assort-Exact':capAst_AssortExact,'Assort-LSH':capAst_AssortLSH,'Adxopt':capAst_adxopt2,'LP':capAst_LP2,'Static-MNL':capAst_paat2}
+  benchmark = 'Static-MNL'
+
+
+  loggs = get_log_dict(prodList,N,algos,price_range,eps,genMethod,C)
   badError = 0
   t1= time.time()
   for i,prod in enumerate(prodList):
@@ -185,7 +187,7 @@ def main():
           if algoname==benchmark:
             maxSetBenchmark = maxSet
 
-        loggs,badError = overlap_wrapper(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchmark)
+        loggs,badError = overlap_wrapper(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchmark,eps)
 
         t = t+1    
         print 'Iteration number is ', str(t)
@@ -197,7 +199,7 @@ def main():
     print 'Time taken to run is', time.time() - t0    
 
     #dump it incrementally for each product size
-    pickle.dump(loggs,open('./output/loggs_'+genMethod+'_'+datetime.datetime.now().strftime("%Y%m%d_%I%M%p")+'.pkl','wb'))
+    pickle.dump(loggs,open('./output/loggs_'+genMethod+'_'+str(prod)+'_'+datetime.datetime.now().strftime("%Y%m%d_%I%M%p")+'.pkl','wb'))
 
   print 'Total experiment time taken is', time.time()  - t1
   for algoname in algos:

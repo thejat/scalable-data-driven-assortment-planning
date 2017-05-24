@@ -43,4 +43,32 @@ def capAst_oracle(prod, C, p, v):
     
     return maxRev, maxRevSet,timeTaken
         
+
+def capAst_oracle_general(prod,feasibles,p,v,meta=None):
+
+    maxRev= 0 #denoting the maximum revenue encountered in the sets till now
+    maxRevSet = -1 #denoting which set has the maximum revenue till now
+    st = time.time()    
+    for ast0 in feasibles:
+        # print 'ast0',ast0
+        # print 'prod',prod
+        # print 'v',v
+        # print 'p',p
+        ast = []
+        for temp1,temp2 in enumerate(ast0):
+            if temp2 ==1:
+                ast.append(temp1+1)
+        ast = tuple(ast)
+        # print 'ast',ast
+        rev = calcRev(ast, p, v, prod)
+        if rev > maxRev:
+            maxRev = rev
+            maxRevSet = ast
+    timeTaken = time.time() - st      
+    
+    # print "Products in the optimal assortment are", maxRevSet 
+    # print "Optimal revenue is", maxRev
+    # print 'Time taken for running the oracle is', timeTaken
+    
+    return maxRev, set(maxRevSet),timeTaken
         

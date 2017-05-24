@@ -28,20 +28,9 @@ import math
 
 
 
-def capAst_NNalgo(prod, C, p, v,  eps,  algo = 'exactNN', nEst =10, nCand =40 , preprocessed =False, KList=None, dbList=None, normConstList=None):
+def capAst_NNalgo(prod, C, p, v,  eps,  algo = 'exactNN', nEst =10, nCand =40 , KList=None, dbList=None, normConstList=None):
     #nCan is the number of candidates - a parameter required for LSH Forest   
     
-    if(not(preprocessed)):
-#        if (algo == 'skLSH'):
-#            KList, dbList, build_time_lshf, normConstList = preprocess(prod, C, p,  eps,  'skLSH', nEst,nCand)
-#        elif (algo == 'exactNN'):
-#            KList, dbList, build_time_lshf, normConstList = preprocess(prod, C, p,  eps,  'exactNN')
-#        elif (algo == 'skLSH_singleLSH'):
-#            dbList, build_time_lshf, normConstList = preprocess(prod, C, p,  eps,  'skLSH_singleLSH', nEst,nCand)       
-        KList, dbList, build_time_lshf, normConstList = preprocess(prod, C, p,  eps,  algo, nEst,nCand)
-
-       
-    #print 'KList is ', KList
     
     st  =time.time()
     #mismatch_count = 0
@@ -66,14 +55,7 @@ def capAst_NNalgo(prod, C, p, v,  eps,  algo = 'exactNN', nEst =10, nCand =40 , 
         
     maxRev =  calcRev(maxSet, p, v,prod)
     timeTaken = time.time() - st
-#    
-#    print " "
-#    print "Results for new algorithm"
-#    #print 'Percentage of mismatch loops is',   mismatch_count/ loop_count     
-#    print 'Revenue maximising set is ', maxSet
-#    print 'Revenue for this set is', maxRev
-#    print 'Time taken for running the ', algo, ' based algorithm is', timeTaken
-#    
+    
     return maxRev, maxSet, timeTaken
    
         
@@ -150,4 +132,44 @@ def calcNN(v,p,K, prod, C, KList, dbList, normConstList,algo):
   
 
 
-    
+
+#### general ones
+
+#Preprocessing for Assort-Exact and Assort-LSH
+def preprocess_general_assortx(prod,feasibles,p,eps):
+  nEst = 100
+  nCand = 200
+  _, dbListskLSH,_,_ = preprocess_general(prod, feasibles, p,  eps,  'skLSH_singleLSH', nEst=nEst,nCand=nCand)    
+  KList, dbListExact, _, normConstList = preprocess_general(prod, feasibles, p,  eps,  'exactNN_single')
+  return {'dbListskLSH':dbListskLSH,'dbListExact':dbListExact,'KList':KList,'normConstList':normConstList,'eps':eps,'nEst':nEst,'nCand':nCand}
+
+
+# Assort-Exact
+def capAst_AssortExact_general(prod,feasibles,p,v,meta):
+  rev, maxSet, time = capAst_NNalgo_general(prod, C, p, v, 
+    meta['eps'],  
+    algo = 'exactNN_single',
+    preprocessed =True,
+    KList=meta['KList'], 
+    dbList=meta['dbListExact'], 
+    normConstList=meta['normConstList'])
+  maxSet = set(maxSet.astype(int))
+  return rev,maxSet,time
+# Assort-LSH
+def capAst_AssortLSH_general(prod,feasibles,p,v,meta):
+  rev, maxSet, time = capAst_NNalgo_general(prod, C, p, v,
+    meta['eps'],  
+    algo = 'skLSH_singleLSH', 
+    nEst =meta['nEst'], 
+    nCand =meta['nCand'] , 
+    preprocessed =True,
+    KList=meta['KList'], 
+    dbList =meta['dbListskLSH'], 
+    normConstList=meta['normConstList']) 
+  return rev,maxSet,time
+
+def capAst_NNalgo_general(prod, feasibles, p, v,  eps,  algo = 'exactNN', nEst =10, nCand =40 , KList=None, dbList=None, normConstList=None):
+    return NotImplementedError
+
+def preprocess_general(prod, feasibles, p,  eps,  algo, nEst=10,nCand=40):
+    return None,None,None,None #NOT IMPLEMENTED
