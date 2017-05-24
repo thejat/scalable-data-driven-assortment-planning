@@ -69,6 +69,8 @@ eps         = 0.1       #tolerance
 N           = 30 # 2 #  #number of times Monte Carlo simulation will run
 prodList    = [100, 200, 400, 600, 800, 1000,5000,10000,20000] #[10000,20000] #[100,200] # 
 genMethod   = 'synthetic' #'bppData' #
+algos = {'Assort-Exact':capAst_AssortExact,'Assort-LSH':capAst_AssortLSH,'Adxopt':capAst_adxopt2,'LP':capAst_LP2,'Static-MNL':capAst_paat2}
+benchmark = 'Static-MNL'
 
 
 def get_real_price(price_range, prod, iterNum = 0):
@@ -83,11 +85,6 @@ def get_real_price(price_range, prod, iterNum = 0):
   allValidPrices = allPrices[allPrices < price_range]
   p = random.sample(allValidPrices, prod)
   return p 
-
-
-
-algos = {'assort-exact':capAst_AssortExact,'assort-lsh':capAst_AssortLSH,'adxopt':capAst_adxopt2,'lp':capAst_LP2,'paat':capAst_paat2}
-benchmark = 'paat'
 
 def generate_instance(price_range,prod,genMethod,iterNum):
   if genMethod=='bppData':

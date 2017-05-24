@@ -2,8 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 
-fname = './output/loggs_synthetic_20170519_1024AM.pkl'#'./output/loggs_bppData_20170519_1021AM.pkl'#
-xlim = 1001
+fname = './output/theja20170519/loggs_bppData_20170519_1033AM.pkl'
+# fname = './output/theja20170519/loggs_synthetic_20170519_1038AM.pkl'
+xlim = 5001
 
 
 params = {'axes.labelsize': 'x-large',
