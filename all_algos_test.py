@@ -52,8 +52,6 @@ def capAst_AssortLSH(prod,C,p,v,meta):
   rev, maxSet, time = capAst_NNalgo(prod, C, p, v,
     meta['eps'],  
     algo = 'skLSH_singleLSH', 
-    nEst =meta['nEst'], 
-    nCand =meta['nCand'] , 
     KList=meta['KList'], 
     dbList =meta['dbListskLSH'], 
     normConstList=meta['normConstList']) 
@@ -156,6 +154,7 @@ def overlap_wrapper(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchmark,ep
 def main():
 
   #parameters required
+  flag_savedata = False
   np.random.seed(10)
   C           = 50 # 10 # #capacity of assortment
   price_range = 1000      #denotes highest possible price of a product
@@ -199,7 +198,8 @@ def main():
     print 'Time taken to run is', time.time() - t0    
 
     #dump it incrementally for each product size
-    pickle.dump(loggs,open('./output/loggs_'+genMethod+'_'+str(prod)+'_'+datetime.datetime.now().strftime("%Y%m%d_%I%M%p")+'.pkl','wb'))
+    if flag_savedata == True:
+      pickle.dump(loggs,open('./output/loggs_'+genMethod+'_'+str(prod)+'_'+datetime.datetime.now().strftime("%Y%m%d_%I%M%p")+'.pkl','wb'))
 
   print 'Total experiment time taken is', time.time()  - t1
   for algoname in algos:

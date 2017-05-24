@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 
-fname = './output/theja20170519/loggs_bppData_20170519_1033AM.pkl'
-# fname = './output/theja20170519/loggs_synthetic_20170519_1038AM.pkl'
+flag_savefig = False
+fname = './output/loggs_synthetic_200_20170524_0355AM.pkl'
 xlim = 5001
 
 
@@ -15,7 +15,7 @@ plt.rcParams.update(params)
 loggs = pickle.load(open(fname,'rb'))
 prodList = loggs['additional']['prodList']
 price_range = loggs['additional']['price_range']
-C = loggs['additional']['C']
+# C = loggs['additional']['C']
 N = loggs['additional']['N']
 eps = loggs['additional']['eps']
 algonames = loggs['additional']['algonames']
@@ -32,7 +32,8 @@ plt.xlabel('Number of products')
 plt.title('Computational Performance')
 plt.legend(loc='best')
 plt.xlim([0,xlim])
-plt.savefig(fname[:-4]+'_time.png')  
+if flag_savefig == True:
+    plt.savefig(fname[:-4]+'_time.png')  
 plt.show()
 
 
@@ -47,7 +48,8 @@ plt.title('Approx. Quality 1')
 plt.legend(loc='best')
 plt.ylim([-.1,1.1])
 plt.xlim([0,xlim])
-plt.savefig(fname[:-4]+'_revPctErr.png')  
+if flag_savefig == True:
+    plt.savefig(fname[:-4]+'_revPctErr.png')  
 plt.show()
 
 
@@ -60,7 +62,8 @@ plt.title('Approx. Quality 2')
 plt.legend(loc='best')
 plt.ylim([-.1,1.1])
 plt.xlim([0,xlim])
-plt.savefig(fname[:-4]+'_setOlp.png')  
+if flag_savefig == True:
+    plt.savefig(fname[:-4]+'_setOlp.png')  
 plt.show()
 
 for algo in algonames:
@@ -72,5 +75,6 @@ plt.title('Approx. Quality 3')
 plt.legend(loc='best')
 plt.ylim([-.1,1.1])
 plt.xlim([0,xlim])
-plt.savefig(fname[:-4]+'_corrSet.png')  
+if flag_savefig == True:
+    plt.savefig(fname[:-4]+'_corrSet.png')  
 plt.show()
