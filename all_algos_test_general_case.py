@@ -14,7 +14,11 @@ def generate_instance_general(price_range,prod,genMethod,iterNum,C=None):
 
 
   #arbitrary
-  nsets = min(int(prod**1.5),int(1e7))
+  if prod < 5000:
+    nsets = int(prod**1.5)
+  else:#running into memory error
+    nsets = int(1e5)
+
   feasibles = []
   C = 0
   for i in range(nsets):
@@ -36,7 +40,7 @@ def main():
   price_range = 1000        #denotes highest possible price of a product
   eps         =  0.1        #tolerance
   N           =  30 #2#     #number of times Monte Carlo simulation will run
-  prodList    = [100,200,400,600,800,1000,5000,10000] #[100,200] # [100,200,400,600,800, 1000] #
+  prodList    = [100,5000] #[100,200,400,600,800,1000]
   genMethod   = 'synthetic' #'bppData'#
   algos       = {'Linear-Search':genAst_oracle,'Assort-Exact-G':genAst_AssortExact,'Assort-LSH-G':genAst_AssortLSH}
   benchmark   = 'Linear-Search'
