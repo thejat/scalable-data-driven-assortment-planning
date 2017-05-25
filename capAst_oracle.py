@@ -6,13 +6,13 @@ Created on Fri Jan 29 05:13:14 2016
 """
 
 from itertools import combinations
-import numpy
+import numpy as np
 import time
 
 def calcRev(ast, p, v, prod):
 #v and p are expected to be n+1 and n length lists respectively 
     if len(p)==prod:    
-        p =  numpy.insert(p,0,0)   #making p a n+1 length list by inserting a 0 in the beginning
+        p =  np.insert(p,0,0)   #making p a n+1 length list by inserting a 0 in the beginning
     num = 0
     den = v[0]
     for s in range(len(ast)):
@@ -21,7 +21,7 @@ def calcRev(ast, p, v, prod):
     rev = num/den
     return rev
 
-def capAst_oracle(prod, C, p, v):
+def capAst_oracle(prod, C, p, v,meta=None):
     maxRev= 0 #denoting the maximum revenue encountered in the sets till now
     maxRevSet = -1 #denoting which set has the maximum revenue till now
     astList = list(combinations(range(1,prod+1), 1))
@@ -44,7 +44,7 @@ def capAst_oracle(prod, C, p, v):
     return maxRev, maxRevSet,timeTaken
         
 
-def capAst_oracle_general(prod,feasibles,p,v,meta=None):
+def generalAst_oracle(prod,feasibles,p,v,meta=None):
 
     maxRev= 0 #denoting the maximum revenue encountered in the sets till now
     maxRevSet = -1 #denoting which set has the maximum revenue till now

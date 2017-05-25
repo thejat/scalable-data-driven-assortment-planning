@@ -1,63 +1,14 @@
 import numpy as np
 import time, pprint, pickle, datetime, random, os
+from plots_paper import get_plots
 
 # Importing Algorithms
-
 from capAst_paat import capAst_paat
-def capAst_paat2(prod,C,p,v,meta=None):
-  if prod > 1000:
-    print '\n\n\nPAAT will NOT execute for number of products greater than 1000******\n'
-    print 'using capAst_LP instead\n\n'
-    rev, maxSet, time = capAst_LP(prod, C, p, v)
-  else:
-    rev, maxSet, time = capAst_paat(prod, C, p, v)
-    maxSet = set(maxSet.astype(int))
-  return rev,maxSet,time
-
 from capAst_LP import capAst_LP
-def capAst_LP2(prod,C,p,v,meta=None):
-  rev, maxSet, time = capAst_LP(prod, C, p, v)
-  return rev,maxSet,time
-
-from capAst_oracle import capAst_oracle
-def capAst_oracle2(prod,C,p,v,meta=None):
-  rev, maxSet, time = capAst_oracle(prod, C, p, v)
-  return rev,maxSet,time
-
 from capAst_adxopt import capAst_adxopt
-def capAst_adxopt2(prod,C,p,v,meta=None):
-  rev, maxSet, time = capAst_adxopt(prod, C, p, v)
-  return rev,maxSet,time
+from capAst_scikitLSH import capAst_AssortExact, capAst_AssortLSH, preprocess
 
-from capAst_scikitLSH import capAst_NNalgo, preprocess
-#Preprocessing for Assort-Exact and Assort-LSH
-def preprocess_assortx(prod,C,p,eps):
-  nEst = 100
-  nCand = 200
-  _, dbListskLSH,_,_ = preprocess(prod, C, p,  eps,  'skLSH_singleLSH', nEst=nEst,nCand=nCand)    
-  KList, dbListExact, _, normConstList = preprocess(prod, C, p,  eps,  'exactNN_single')
-  return {'dbListskLSH':dbListskLSH,'dbListExact':dbListExact,'KList':KList,'normConstList':normConstList,'eps':eps,'nEst':nEst,'nCand':nCand}
-# Assort-Exact
-def capAst_AssortExact(prod,C,p,v,meta):
-  rev, maxSet, time = capAst_NNalgo(prod, C, p, v, 
-    meta['eps'],  
-    algo = 'exactNN_single',
-    KList=meta['KList'], 
-    dbList=meta['dbListExact'], 
-    normConstList=meta['normConstList'])
-  maxSet = set(maxSet.astype(int))
-  return rev,maxSet,time
-# Assort-LSH
-def capAst_AssortLSH(prod,C,p,v,meta):
-  rev, maxSet, time = capAst_NNalgo(prod, C, p, v,
-    meta['eps'],  
-    algo = 'skLSH_singleLSH', 
-    KList=meta['KList'], 
-    dbList =meta['dbListskLSH'], 
-    normConstList=meta['normConstList']) 
-  return rev,maxSet,time
-
-def get_real_price(price_range, prod, iterNum = 0):
+def get_real_prices(price_range, prod, iterNum = 0):
   fname = os.getcwd() + '/billion_price_data/processed_data/usa_2/numProducts_stats.npz'
   dateList = np.load(fname)['good_dates']
   fileName = os.getcwd() + '/billion_price_data/processed_data/usa_2/prices_'
@@ -72,7 +23,7 @@ def get_real_price(price_range, prod, iterNum = 0):
 
 def generate_instance(price_range,prod,genMethod,iterNum):
   if genMethod=='bppData':
-    p = get_real_price(price_range, prod, iterNum)
+    p = get_real_prices(price_range, prod, iterNum)
   else:
     p = price_range * np.random.beta(2,5,prod) 
   p = np.around(p, decimals =2)
@@ -114,12 +65,15 @@ def get_log_dict(prodList,N,algos,price_range,eps,genMethod,C=None):
   loggs = {}
   loggs['additional'] = {'prodList':prodList,'algonames':algos.keys(),'N':N,'eps':eps,'price_range':price_range,'genMethod':genMethod}
   if C is not None:
-      loggs['additional']['C'] = C
+    loggs['additional']['C'] = C
+  else:
+    loggs['additional']['C'] = np.zeros((np.shape(prodList)[0], N))
+
   for algoname in algos:
     loggs[algoname] = matrices(prodList,N)
   return loggs
 
-def log_wrapper(algos,loggs,benchmark,i):
+def compute_summary_stats(algos,loggs,benchmark,i):
   for algoname in algos:
     print algoname
     if benchmark in algos:
@@ -134,7 +88,7 @@ def log_wrapper(algos,loggs,benchmark,i):
 
   return loggs
 
-def overlap_wrapper(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchmark,eps):
+def compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchmark,eps):
 
   def overlap(maxSet,maxSetBenchmark):
     setOlp  = len(maxSetBenchmark.intersection(maxSet))
@@ -160,10 +114,10 @@ def main():
   price_range = 1000      #denotes highest possible price of a product
   eps         = 0.1       #tolerance
   N           = 2 #30 #  #number of times Monte Carlo simulation will run
-  prodList    = [100,200]#[100, 200, 400, 600, 800, 1000,5000,10000,20000] #[10000,20000] #[100,200] # 
+  prodList    = [100,200,400,600,1000]#[100, 200, 400, 600, 800, 1000,5000,10000,20000] #[10000,20000] #[100,200] # 
   genMethod   = 'synthetic' #'bppData' #
-  algos = {'Assort-Exact':capAst_AssortExact,'Assort-LSH':capAst_AssortLSH,'Adxopt':capAst_adxopt2,'LP':capAst_LP2,'Static-MNL':capAst_paat2}
-  benchmark = 'Static-MNL'
+  algos = {'Assort-Exact':capAst_AssortExact,'Assort-LSH':capAst_AssortLSH,'Adxopt':capAst_adxopt,'LP':capAst_LP}#,'Static-MNL':capAst_paat}
+  benchmark = 'LP'#'Static-MNL'#
 
 
   loggs = get_log_dict(prodList,N,algos,price_range,eps,genMethod,C)
@@ -177,25 +131,30 @@ def main():
         #generating the price 
         p,v = generate_instance(price_range,prod,genMethod,t)
 
-        meta = preprocess_assortx(prod,C,p,eps) #tbd: make it conditional
+        meta = {'eps':eps}
+        if 'Assort-Exact' in algos:
+          meta['db_exact'],_,meta['normConst'] = preprocess(prod, C, p, 'special_case_exact')
+        if 'Assort-LSH' in algos:
+          meta['db_LSH'],_,_ = preprocess(prod, C, p, 'special_case_LSH', nEst=100,nCand=200)#Hardcoded values
 
         #run algos
+        maxSet,maxSetBenchmark = None, None
         for algoname in algos:
-          print algoname
+          print 'Executing ',algoname
           loggs[algoname]['rev'][i,t],maxSet,loggs[algoname]['time'][i,t] = algos[algoname](prod,C,p,v,meta)
           if algoname==benchmark:
             maxSetBenchmark = maxSet
 
-        loggs,badError = overlap_wrapper(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchmark,eps)
+        loggs,badError = compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchmark,eps)
 
         t = t+1    
-        print 'Iteration number is ', str(t)
+        print 'Iteration number is ', str(t),' for prod size ',prod
       
-    loggs = log_wrapper(algos,loggs,benchmark,i)
 
     
     print 'Calculations done for number of products', prod  
     print 'Time taken to run is', time.time() - t0    
+    loggs = compute_summary_stats(algos,loggs,benchmark,i)
 
     #dump it incrementally for each product size
     if flag_savedata == True:
@@ -203,10 +162,11 @@ def main():
 
   print 'Total experiment time taken is', time.time()  - t1
   for algoname in algos:
-    print algoname
-    print loggs[algoname]['time_mean']
-    print loggs[algoname]['revPctErr_mean']
+    print algoname,'time_mean',loggs[algoname]['time_mean']
+    print algoname,'revPctErr_mean',loggs[algoname]['revPctErr_mean']
 
+  return loggs
 
 if __name__=='__main__':
-  main()
+  loggs = main()
+  get_plots(fname=None,flag_savefig=False,xlim=5001,loggs=loggs)

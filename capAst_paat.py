@@ -17,7 +17,7 @@ from capAst_oracle import calcRev
 #The code below assumes v to be of length (number of products +1) and p to be of length number of products
 
 #Ensure that the entries of v are distinct otherwise there might be issues
-def capAst_paat(prod, C, p, v):
+def capAst_paat0(prod, C, p, v):
     st = time.time()
     n = prod +1
     v =  v/v[0] #normalizing the no-purchase coefficient to 1 
@@ -60,9 +60,6 @@ def capAst_paat(prod, C, p, v):
         
         #this is to ensure that the first coordinate is smaller -not sure if the below line is foolproof   
         if(pos[l-1][0] > pos[l-1][1]):
-#            tmpVar = pos[l-1][1]
-#            pos[l-1][1] = pos[l-1][0]
-#            pos[l-1][0]  =tmpVar
             pos[l-1][0], pos[l-1][1] = pos[l-1][1], pos[l-1][0]
         #print 'position switched'
         
@@ -87,15 +84,6 @@ def capAst_paat(prod, C, p, v):
     for l in range(numIspt+1):
         objs = A[numpy.where(A[:, l]< sys.maxint), l].flatten()           
         #objs = numpy.where(0 < objs)  
-        
-    
-#        num = 0
-#        den = 1
-#        for s in range(len(objs)):
-#            num  = num + p[int(objs[s])]*v[int(objs[s])]
-#            den  = den + v[int(objs[s])]
-#            
-#        rev = num/den
     
         rev = calcRev(objs.astype('int'), p, v, prod)
         if rev > maxRev:
@@ -114,3 +102,15 @@ def capAst_paat(prod, C, p, v):
     return maxRev, optSet, timeTaken;       
         
         
+
+
+
+def capAst_paat(prod,C,p,v,meta=None):
+  if prod > 1000:
+    print '\n\n\n*******PAAT will NOT execute for #products greater than 1000: using capAst_LP instead*********\n\n'
+    from capAst_LP import capAst_LP
+    rev, maxSet, time = capAst_LP(prod, C, p, v)
+  else:
+    rev, maxSet, time = capAst_paat0(prod, C, p, v)
+    maxSet = set(maxSet.astype(int))
+  return rev,maxSet,time

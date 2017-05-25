@@ -8,7 +8,7 @@ Created on Thurs May 05 05:13:14 2017
 import numpy, time
 from gurobipy import *
 
-def capAst_LP(prod, C, p, v):
+def capAst_LP(prod, C, p, v, meta = None):
     #v and p are expected to be n+1 and n+1 length lists respectively 
     st = time.time()    
 
