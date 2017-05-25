@@ -44,7 +44,9 @@ def capAst_oracle(prod, C, p, v,meta=None):
     return maxRev, maxRevSet,timeTaken
         
 
-def generalAst_oracle(prod,feasibles,p,v,meta=None):
+def genAst_oracle(prod,C,p,v,meta=None):
+
+    feasibles = meta['feasibles']
 
     maxRev= 0 #denoting the maximum revenue encountered in the sets till now
     maxRevSet = -1 #denoting which set has the maximum revenue till now

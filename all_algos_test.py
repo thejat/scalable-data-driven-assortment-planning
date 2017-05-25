@@ -46,7 +46,7 @@ def generate_instance(price_range,prod,genMethod,iterNum):
       v= np.concatenate((u,newEnt))
       u, indices = np.unique(v, return_inverse=True)
       ct =ct+1
-  print 'Number of times v had to be generated', ct
+  # print 'Number of times v had to be generated', ct
 
   return p,v
 
@@ -75,9 +75,9 @@ def get_log_dict(prodList,N,algos,price_range,eps,genMethod,C=None):
 
 def compute_summary_stats(algos,loggs,benchmark,i):
   for algoname in algos:
-    print algoname
+    # print algoname
     if benchmark in algos:
-      loggs[algoname]['revPctErr'][i] = (loggs[benchmark]['rev'][i,:] - loggs[algoname]['rev'][i,:])/loggs[benchmark]['rev'][i,:]
+      loggs[algoname]['revPctErr'][i] = (loggs[benchmark]['rev'][i,:] - loggs[algoname]['rev'][i,:])/(loggs[benchmark]['rev'][i,:]+1e-6)
       loggs[algoname]['revPctErr_mean'][i] = np.mean(loggs[algoname]['revPctErr'][i,:])
       loggs[algoname]['revPctErr_std'][i] = np.std(loggs[algoname]['revPctErr'][i,:])
       loggs[algoname]['revPctErr_max'][i] = np.max(loggs[algoname]['revPctErr'][i,:])
@@ -98,7 +98,7 @@ def compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchm
 
   if benchmark in algos:
     for algoname in algos:
-      print 'Collecting benchmarks for ',algoname
+      # print 'Collecting benchmarks for ',algoname
       loggs[algoname]['setOlp'][i,t],loggs[algoname]['corrSet'][i,t] = overlap(maxSet,maxSetBenchmark)
       if(loggs[benchmark]['rev'][i,t] - loggs[algoname]['rev'][i,t] > eps ):
           badError = badError +1
@@ -108,13 +108,13 @@ def compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchm
 def main():
 
   #parameters required
-  flag_savedata = False
+  flag_savedata = True
   np.random.seed(10)
   C           = 50 # 10 # #capacity of assortment
   price_range = 1000      #denotes highest possible price of a product
   eps         = 0.1       #tolerance
-  N           = 2 #30 #  #number of times Monte Carlo simulation will run
-  prodList    = [100,200,400,600,1000]#[100, 200, 400, 600, 800, 1000,5000,10000,20000] #[10000,20000] #[100,200] # 
+  N           = 30 #30 #  #number of times Monte Carlo simulation will run
+  prodList    = [100, 200, 400, 600, 800, 1000,5000,10000] #[10000,20000] #[100,200] # [100,200,400,600,1000]#
   genMethod   = 'synthetic' #'bppData' #
   algos = {'Assort-Exact':capAst_AssortExact,'Assort-LSH':capAst_AssortLSH,'Adxopt':capAst_adxopt,'LP':capAst_LP}#,'Static-MNL':capAst_paat}
   benchmark = 'LP'#'Static-MNL'#
@@ -128,45 +128,49 @@ def main():
     t0 = time.time()
     t = 0
     while(t<N):
-        #generating the price 
-        p,v = generate_instance(price_range,prod,genMethod,t)
 
-        meta = {'eps':eps}
-        if 'Assort-Exact' in algos:
-          meta['db_exact'],_,meta['normConst'] = preprocess(prod, C, p, 'special_case_exact')
-        if 'Assort-LSH' in algos:
-          meta['db_LSH'],_,_ = preprocess(prod, C, p, 'special_case_LSH', nEst=100,nCand=200)#Hardcoded values
+      print 'Iteration number is ', str(t+1),' of ',N,', for prod size ',prod
 
-        #run algos
-        maxSet,maxSetBenchmark = None, None
-        for algoname in algos:
-          print 'Executing ',algoname
-          loggs[algoname]['rev'][i,t],maxSet,loggs[algoname]['time'][i,t] = algos[algoname](prod,C,p,v,meta)
-          if algoname==benchmark:
-            maxSetBenchmark = maxSet
+      #generating the price 
+      p,v = generate_instance(price_range,prod,genMethod,t)
 
-        loggs,badError = compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchmark,eps)
+      meta = {'eps':eps}
+      if 'Assort-Exact' in algos:
+        meta['db_exact'],_,meta['normConst'] = preprocess(prod, C, p, 'special_case_exact')
+      if 'Assort-LSH' in algos:
+        meta['db_LSH'],_,_ = preprocess(prod, C, p, 'special_case_LSH', nEst=100,nCand=200)#Hardcoded values
 
-        t = t+1    
-        print 'Iteration number is ', str(t),' for prod size ',prod
+      #run algos
+      maxSet,maxSetBenchmark = None, None
+      for algoname in algos:
+        loggs[algoname]['rev'][i,t],maxSet,loggs[algoname]['time'][i,t] = algos[algoname](prod,C,p,v,meta)
+        print '\tExecuted ',algoname,' in ',loggs[algoname]['time'][i,t],'sec.'#,' Set:',maxSet
+
+        if algoname==benchmark:
+          maxSetBenchmark = maxSet
+
+      loggs,badError = compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchmark,eps)
+
+      t = t+1    
       
 
     
-    print 'Calculations done for number of products', prod  
-    print 'Time taken to run is', time.time() - t0    
+    print 'Experiments (',N,' sims) for number of products ',prod, ' is done.'  
+    print 'Cumulative time taken is', time.time() - t0,'\n'   
     loggs = compute_summary_stats(algos,loggs,benchmark,i)
 
     #dump it incrementally for each product size
     if flag_savedata == True:
-      pickle.dump(loggs,open('./output/loggs_'+genMethod+'_'+str(prod)+'_'+datetime.datetime.now().strftime("%Y%m%d_%I%M%p")+'.pkl','wb'))
+      pickle.dump(loggs,open('./output/cap_loggs_'+genMethod+'_'+str(prod)+'_'+datetime.datetime.now().strftime("%Y%m%d_%I%M%p")+'.pkl','wb'))
 
-  print 'Total experiment time taken is', time.time()  - t1
+  print '\nAll experiments done. Total time taken is', time.time()  - t1,'\n\n'
+  print "Summary:"
   for algoname in algos:
-    print algoname,'time_mean',loggs[algoname]['time_mean']
-    print algoname,'revPctErr_mean',loggs[algoname]['revPctErr_mean']
+    print '\t',algoname,'time_mean',loggs[algoname]['time_mean']
+    print '\t',algoname,'revPctErr_mean',loggs[algoname]['revPctErr_mean']
 
   return loggs
 
 if __name__=='__main__':
   loggs = main()
-  get_plots(fname=None,flag_savefig=False,xlim=5001,loggs=loggs)
+  # get_plots(fname=None,flag_savefig=False,xlim=5001,loggs=loggs)

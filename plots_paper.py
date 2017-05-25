@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 import pickle
 
 
@@ -85,7 +86,13 @@ def get_plots(fname=None,flag_savefig=False,xlim=5001,loggs=None):
 
 if __name__ == '__main__':
 
-    fname = './output/loggs_synthetic_200_20170524_0355AM.pkl'
-    xlim = 5001
+    # fname = './output/results20170524/cap_loggs_synthetic_10000_20170525_0530AM.pkl'
+    # xlim = 10001
+
+    fname = './output/results20170524/loggs_synthetic_1000_20170525_0505AM.pkl'
+    xlim = 1001
+
+    # fname = './output/cap_loggs_synthetic_400_20170525_0601AM.pkl'
+    # xlim = 401
 
     get_plots(fname,flag_savefig=False,xlim=xlim)
