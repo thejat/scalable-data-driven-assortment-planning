@@ -73,7 +73,7 @@ def get_plots(fname=None,flag_savefig=False,xlim=5001,loggs=None):
     for algo in algonames:
         plt.plot( prodList, loggs[algo]['corrSet_mean'],
         linestyle="-", marker = 'o', label = algo, linewidth=2.0)
-    plt.ylabel('Set Overlap Normalized')
+    plt.ylabel('Pct. Correct Set Output')
     plt.xlabel('Number of products')
     plt.title('Approx. Quality 3')
     plt.legend(loc='best')
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     # fname = './output/results20170524/loggs_synthetic_1000_20170525_0505AM.pkl'
     # xlim = 1001
 
-    fname = './output/gen_loggs_synthetic_1000_20170525_0747AM.pkl'
-    xlim = 1001
+    fname = './output/cap_loggs_synthetic_800_20170525_0440PM.pkl'
+    xlim = 801
 
     get_plots(fname,flag_savefig=True,xlim=xlim)

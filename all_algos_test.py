@@ -1,5 +1,5 @@
 import numpy as np
-import time, pprint, pickle, datetime, random, os
+import time, pprint, pickle, datetime, random, os, copy
 from plots_paper import get_plots
 
 # Importing Algorithms
@@ -71,6 +71,9 @@ def get_log_dict(prodList,N,algos,price_range,eps,genMethod,C=None):
 
   for algoname in algos:
     loggs[algoname] = matrices(prodList,N)
+
+    loggs[algoname]['maxSet'] = {}
+
   return loggs
 
 def compute_summary_stats(algos,loggs,benchmark,i):
@@ -88,7 +91,7 @@ def compute_summary_stats(algos,loggs,benchmark,i):
 
   return loggs
 
-def compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchmark,eps):
+def compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSetBenchmark,eps):
 
   def overlap(maxSet,maxSetBenchmark):
     setOlp  = len(maxSetBenchmark.intersection(maxSet))
@@ -99,7 +102,7 @@ def compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchm
   if benchmark in algos:
     for algoname in algos:
       # print 'Collecting benchmarks for ',algoname
-      loggs[algoname]['setOlp'][i,t],loggs[algoname]['corrSet'][i,t] = overlap(maxSet,maxSetBenchmark)
+      loggs[algoname]['setOlp'][i,t],loggs[algoname]['corrSet'][i,t] = overlap(loggs[algoname]['maxSet'][(i,t)],maxSetBenchmark)
       if(loggs[benchmark]['rev'][i,t] - loggs[algoname]['rev'][i,t] > eps ):
           badError = badError +1
   return loggs,badError
@@ -109,12 +112,12 @@ def main():
 
   #parameters required
   flag_savedata = True
-  np.random.seed(10)
-  C           = 50 # 10 # #capacity of assortment
+  np.random.seed(1000)
+  C           = 50        #capacity of assortment
   price_range = 1000      #denotes highest possible price of a product
   eps         = 0.1       #tolerance
-  N           = 30 #30 #  #number of times Monte Carlo simulation will run
-  prodList    = [100, 200, 400, 600, 800, 1000,5000,10000] #[10000,20000] #[100,200] # [100,200,400,600,1000]#
+  N           = 14 #30 #   #number of times Monte Carlo simulation will run
+  prodList    = [100,400,5000] #[100, 200, 400, 600, 800, 1000,5000,10000] #
   genMethod   = 'synthetic' #'bppData' #
   algos = {'Assort-Exact':capAst_AssortExact,'Assort-LSH':capAst_AssortLSH,'Adxopt':capAst_adxopt,'LP':capAst_LP}#,'Static-MNL':capAst_paat}
   benchmark = 'LP'#'Static-MNL'#
@@ -138,18 +141,18 @@ def main():
       if 'Assort-Exact' in algos:
         meta['db_exact'],_,meta['normConst'] = preprocess(prod, C, p, 'special_case_exact')
       if 'Assort-LSH' in algos:
-        meta['db_LSH'],_,_ = preprocess(prod, C, p, 'special_case_LSH', nEst=100,nCand=200)#Hardcoded values
+        meta['db_LSH'],_,_ = preprocess(prod, C, p, 'special_case_LSH', nEst=20,nCand=80)#Hardcoded values
 
       #run algos
-      maxSet,maxSetBenchmark = None, None
+      maxSetBenchmark = None
       for algoname in algos:
-        loggs[algoname]['rev'][i,t],maxSet,loggs[algoname]['time'][i,t] = algos[algoname](prod,C,p,v,meta)
-        print '\tExecuted ',algoname,' in ',loggs[algoname]['time'][i,t],'sec.'#,' Set:',maxSet
+        loggs[algoname]['rev'][i,t],loggs[algoname]['maxSet'][(i,t)],loggs[algoname]['time'][i,t] = algos[algoname](prod,C,p,v,meta)
+        print '\tExecuted ',algoname,' in ',loggs[algoname]['time'][i,t],'sec.'
 
         if algoname==benchmark:
-          maxSetBenchmark = maxSet
+          maxSetBenchmark = copy.deepcopy(loggs[algoname]['maxSet'][(i,t)])
 
-      loggs,badError = compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchmark,eps)
+      loggs,badError = compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSetBenchmark,eps)
 
       t = t+1    
       

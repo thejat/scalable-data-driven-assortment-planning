@@ -13,7 +13,7 @@ def capAst_LP(prod, C, p, v, meta = None):
     st = time.time()    
 
     # Model
-    m = Model("capAst")
+    m = Model("capAst_LP")
 
     items = range(prod+1)
 
@@ -31,12 +31,13 @@ def capAst_LP(prod, C, p, v, meta = None):
         m.addConstr(item[i]*1.0/v[i] - item[0]*1.0/v[0] <= 0, 'order_'+str(i))
 
     # Solve
+    m.setParam(GRB.Param.OutputFlag, 0)
     m.optimize()
 
     timeTaken = time.time() - st      
     # print " " 
     # print "Results for LP"
-    print 'Time taken for running the LP is', timeTaken
+    print '\t\tTime taken for running the LP is', timeTaken
     maxRev = 0
     maxRevSet = []
     if m.status == GRB.Status.OPTIMAL:
@@ -49,7 +50,7 @@ def capAst_LP(prod, C, p, v, meta = None):
                 # print('%s %g' % (i, itemx[i]))
                 maxRevSet.append(int(i))
 
-        print "Products in the LP optimal assortment are", maxRevSet 
+        print "\t\tProducts in the LP optimal assortment are", maxRevSet 
 
     else:
         print('No solution')

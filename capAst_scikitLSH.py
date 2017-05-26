@@ -59,9 +59,10 @@ def assortX(prod, C, p, v,  eps, algo=None, db=None, normConst=None,feasibles=No
     U   = max(p) #Scalar here
 
     count = 0
+    queryTimeLog = 0
     while (U - L) > eps:
         K = (U+L)/2
-        maxPseudoRev, maxSet= get_nn_set(v,p,K,prod,C,db,normConst,algo,feasibles)
+        maxPseudoRev, maxSet,queryTimeLog= get_nn_set(v,p,K,prod,C,db,normConst,algo,feasibles,queryTimeLog)
         if (maxPseudoRev/v[0]) >= K:
             L = K
             # print "going left at count ",count
@@ -74,17 +75,19 @@ def assortX(prod, C, p, v,  eps, algo=None, db=None, normConst=None,feasibles=No
     maxRev =  calcRev(maxSet, p, v,prod)
     timeTaken = time.time() - st
     
-    return maxRev, maxSet, timeTaken
+    return maxRev, maxSet, timeTaken, queryTimeLog
    
 
-def get_nn_set(v,p,K, prod, C, db, normConst,algo,feasibles=None):
+def get_nn_set(v,p,K, prod, C, db, normConst,algo,feasibles=None,queryTimeLog=0):
     vTemp = np.concatenate((v[1:], -K*v[1:]))
     query = np.concatenate((vTemp, [0])) #appending extra coordinate as recommended by Simple LSH, no normalization being done
 
     # print "query",query
     # print "query reshaped", query.reshape(1,-1)
 
+    t_before = time.time()
     distList, approx_neighbors  = db.kneighbors(query.reshape(1,-1),return_distance=True)
+    queryTimeLog += time.time() - t_before
 
     # print "distList",distList
     # print distList<1
@@ -116,37 +119,49 @@ def get_nn_set(v,p,K, prod, C, db, normConst,algo,feasibles=None):
     except:
         nn_set = nn_set
 
-    return pseudoRev, nn_set      
+    return pseudoRev, nn_set,queryTimeLog      
   
 
 # Wrappers
 # Assort-Exact-special
 def capAst_AssortExact(prod,C,p,v,meta):
-  return assortX(prod, C, p, v, 
+  maxRev, maxSet, timeTaken, queryTimeLog = assortX(prod, C, p, v, 
     meta['eps'],  
     algo = 'special_case_exact',
     db=meta['db_exact'], 
     normConst=meta['normConst'])
+  print "\t\tAssortExact set:",maxSet
+  print "\t\tAssortExact cumulative querytime:",queryTimeLog
+  return maxRev, maxSet, timeTaken
 # Assort-LSH-special
 def capAst_AssortLSH(prod,C,p,v,meta):
-  return assortX(prod, C, p, v,
+  maxRev, maxSet, timeTaken, queryTimeLog = assortX(prod, C, p, v,
     meta['eps'],  
     algo = 'special_case_LSH', 
     db =meta['db_LSH'], 
     normConst=meta['normConst'])
+  print "\t\tAssortLSH set:",maxSet
+  print "\t\tAssortLSH cumulative querytime:",queryTimeLog
+  return maxRev, maxSet, timeTaken
 # Assort-Exact-general
 def genAst_AssortExact(prod,C,p,v,meta):
-  return assortX(prod, C, p, v, 
+  maxRev, maxSet, timeTaken, queryTimeLog = assortX(prod, C, p, v, 
     meta['eps'],  
     algo = 'general_case_exact',
     db=meta['db_exact'], 
     normConst=meta['normConst'],
     feasibles=meta['feasibles'])
+  print "\t\tAssortExact-G set:",maxSet
+  print "\t\tAssortExact-G cumulative querytime:",queryTimeLog
+  return maxRev, maxSet, timeTaken
 # Assort-LSH-general
 def genAst_AssortLSH(prod,C,p,v,meta):
-  return assortX(prod, C, p, v,
+  maxRev, maxSet, timeTaken, queryTimeLog = assortX(prod, C, p, v,
     meta['eps'],  
     algo = 'general_case_LSH', 
     db =meta['db_LSH'], 
     normConst=meta['normConst'],
     feasibles=meta['feasibles'])
+  print "\t\tAssortLSH-G set:",maxSet
+  print "\t\tAssortLSH-G cumulative querytime:",queryTimeLog
+  return maxRev, maxSet, timeTaken
