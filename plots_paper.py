@@ -13,16 +13,17 @@ plt.rcParams.update({'legend.fontsize': 'xx-large',
 
 
 def get_plot_subroutine(params):
-
+    # plt.gca().cla()
     fig = plt.figure()
     ax = fig.add_subplot(111)
     xs = params['loggs']['additional'][params['xsname']]
     for algo in params['loggs']['additional']['algonames']:
         if params['flag_bars']==True:
-            ys_lb  = np.asarray([np.percentile(params['loggs'][algo]['time'][i,:],25) for i in range(len(xs))])
-            ys_ub  = np.asarray([np.percentile(params['loggs'][algo]['time'][i,:],75) for i in range(len(xs))])
+            ys_lb  = np.asarray([np.percentile(params['loggs'][algo][params['logname']][i,:],25) for i in range(len(xs))])
+            ys_ub  = np.asarray([np.percentile(params['loggs'][algo][params['logname']][i,:],75) for i in range(len(xs))])
             ax.fill_between(xs, ys_lb, ys_ub, alpha=0.5, edgecolor='#CC4F1B', facecolor='#FF9848')
-        ys     = np.asarray([np.percentile(params['loggs'][algo][params['logname']][i,:],50) for i in range(len(xs))])
+        # ys = np.asarray([np.percentile(params['loggs'][algo][params['logname']][i,:],50) for i in range(len(xs))])
+        ys = np.asarray([np.mean(params['loggs'][algo][params['logname']][i,:]) for i in range(len(xs))])
         ax.plot(xs, ys,label=algo)
 
     ax.legend(loc='best', bbox_to_anchor=(0.5, 1.05), ncol=3)
@@ -50,19 +51,19 @@ def get_plots(fname=None,flag_savefig=False,xlim=5001,loggs=None,xsname='prodLis
 
     ####plot1
     params = {'fname':fname[:-4]+'_time.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
-        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Time (s)','logname':'time','xsname':xsname}
+        'loggs':loggs,'flag_bars':True,'xlab':xlab,'ylab':'Time (s)','logname':'time','xsname':xsname}
     get_plot_subroutine(params)
 
 
     ###plot2
     params = {'fname':fname[:-4]+'_revPctErr.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
-        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Pct. Err. in Revenue','logname':'revPctErr','xsname':xsname}
+        'loggs':loggs,'flag_bars':True,'xlab':xlab,'ylab':'Pct. Err. in Revenue','logname':'revPctErr','xsname':xsname}
     get_plot_subroutine(params)
 
 
     ###plot3
     params = {'fname':fname[:-4]+'_setOlp.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
-        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Pct. Set Overlap','logname':'setOlp','xsname':xsname}
+        'loggs':loggs,'flag_bars':True,'xlab':xlab,'ylab':'Pct. Set Overlap','logname':'setOlp','xsname':xsname}
     get_plot_subroutine(params)
 
 
@@ -76,8 +77,9 @@ def get_plots(fname=None,flag_savefig=False,xlim=5001,loggs=None,xsname='prodLis
 if __name__ == '__main__':
 
 
-    fname = './output/gen_loggs_synthetic_lenF_400_20170525_1155PM.pkl'
-    xlim = 401
+    # fname = './output/gen_loggs_synthetic_lenF_51200_20170526_0102AM.pkl'
+    fname = './output/results20170525final/gen_loggs_bppData_lenF_51200_20170526_0158AM.pkl'
+    xlim = 51201
     xsname = 'lenFeasibles'
     xlab = 'Number of Assortments'
 

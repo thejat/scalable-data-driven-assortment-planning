@@ -217,17 +217,17 @@ def run_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synthetic
 
   return loggs
 
-def run_lenFeas_experiment(flag_savedata=True,genMethod='synthetic'):
+def run_lenFeas_experiment(flag_savedata=True,genMethod='synthetic',nEst=20,nCand=80):
 
   #parameters required
   random.seed(10)
   np.random.seed(1000)
   price_range = 1000      #denotes highest possible price of a product
   eps         = 0.1       #tolerance
-  N           = 30 #   #number of times Monte Carlo simulation will run
+  N           = 50 #   #number of times Monte Carlo simulation will run
   prod        = 1000
   lenFeasibles= [100,200,400,800,1600,3200,6400,12800,25600,51200]
-  algos       = {'Linear-Search':genAst_oracle,'Assort-Exact-G':genAst_AssortExact,'Assort-LSH-G':genAst_AssortLSH}
+  algos       = {'Linear-Search':genAst_oracle,'Assort-LSH-G':genAst_AssortLSH}#,'Assort-Exact-G':genAst_AssortExact}
   benchmark   = 'Linear-Search'
   loggs = get_log_dict(lenFeasibles,N,algos,price_range,eps,genMethod) #hack
   loggs['additional']['lenFeasibles'] = lenFeasibles
@@ -253,7 +253,7 @@ def run_lenFeas_experiment(flag_savedata=True,genMethod='synthetic'):
       if 'Assort-Exact-G' in algos:
         meta['db_exact'],_,meta['normConst'] = preprocess(prod, C, p, 'general_case_exact',feasibles=feasibles)
       if 'Assort-LSH-G' in algos:
-        meta['db_LSH'],_,_ = preprocess(prod, C, p, 'general_case_LSH', nEst=20,nCand=80,feasibles=feasibles)#Hardcoded values
+        meta['db_LSH'],_,_ = preprocess(prod, C, p, 'general_case_LSH', nEst=nEst,nCand=nCand,feasibles=feasibles)#Hardcoded values
 
 
 
@@ -291,11 +291,15 @@ def run_lenFeas_experiment(flag_savedata=True,genMethod='synthetic'):
 
 
 if __name__=='__main__':
-  # loggs1 = run_experiment(flag_capacitated = True,flag_savedata = True,genMethod='synthetic')
+  loggs1 = run_experiment(flag_capacitated = True,flag_savedata = True,genMethod='synthetic')
   # loggs2 = run_experiment(flag_capacitated = True,flag_savedata = True,genMethod='bppData')
   # loggs3 = run_experiment(flag_capacitated = False,flag_savedata = True,genMethod='synthetic')
   # loggs4 = run_experiment(flag_capacitated = False,flag_savedata = True,genMethod='bppData')
 
-  loggs5 = run_lenFeas_experiment(flag_savedata = True,genMethod='synthetic')
-  loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='bppData')
+
+  #tbd1
+  # loggs5 = run_lenFeas_experiment(flag_savedata = True,genMethod='synthetic',nEst=40,nCand=160)
+  # loggs5 = run_lenFeas_experiment(flag_savedata = True,genMethod='synthetic',nEst=100,nCand=200)
+  # loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='bppData',nEst=40,nCand=160)
+  # loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='bppData',nEst=100,nCand=200)
   
