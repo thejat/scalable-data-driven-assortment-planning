@@ -1,7 +1,7 @@
 
 from sklearn.neighbors import LSHForest
 from sklearn.neighbors import NearestNeighbors
-from capAst_oracle import calcRev
+from competing_algos import calcRev
 import numpy as np
 import time, math
 

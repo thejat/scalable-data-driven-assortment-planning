@@ -2,17 +2,41 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pickle
+plt.rcParams.update({'legend.fontsize': 'xx-large',
+    'axes.labelsize': '24',
+    'axes.titlesize':'xx-large',
+    'xtick.labelsize':'xx-large',
+    'ytick.labelsize':'xx-large',
+    'figure.autolayout': True,
+    'text.usetex'      : False})
 
 
-def get_plots(fname=None,flag_savefig=False,xlim=5001,loggs=None):
 
-    #Plotting parameters
-    params = {'axes.labelsize': 'x-large',
-             'axes.titlesize':'x-large',
-             'xtick.labelsize':'x-large',
-             'ytick.labelsize':'x-large'}
-    plt.rcParams.update(params)
+def get_plot_subroutine(params):
 
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    xs = params['loggs']['additional'][params['xsname']]
+    for algo in params['loggs']['additional']['algonames']:
+        if params['flag_bars']==True:
+            ys_lb  = np.asarray([np.percentile(params['loggs'][algo]['time'][i,:],25) for i in range(len(xs))])
+            ys_ub  = np.asarray([np.percentile(params['loggs'][algo]['time'][i,:],75) for i in range(len(xs))])
+            ax.fill_between(xs, ys_lb, ys_ub, alpha=0.5, edgecolor='#CC4F1B', facecolor='#FF9848')
+        ys     = np.asarray([np.percentile(params['loggs'][algo][params['logname']][i,:],50) for i in range(len(xs))])
+        ax.plot(xs, ys,label=algo)
+
+    ax.legend(loc='best', bbox_to_anchor=(0.5, 1.05), ncol=3)
+    plt.ylabel(params['ylab'])
+    plt.xlabel(params['xlab'])
+    plt.legend(loc='best')
+    plt.xlim(params['xlims'])
+
+    if params['flag_savefig'] == True:
+        plt.savefig(params['fname'])  
+    plt.show()
+
+
+def get_plots(fname=None,flag_savefig=False,xlim=5001,loggs=None,xsname='prodList',xlab='Number of Products'):
 
     #Load data
     if fname is None and loggs is None:
@@ -20,79 +44,41 @@ def get_plots(fname=None,flag_savefig=False,xlim=5001,loggs=None):
         return 0
     elif fname is not None:
         loggs = pickle.load(open(fname,'rb'))
-    prodList = loggs['additional']['prodList']
-    algonames = loggs['additional']['algonames']
-         
+    else:
+        fname = 'undefined0000'#generic
+    # print loggs['additional']['N']
+
     ####plot1
-    for algo in algonames:
-        if algo=='paat':
-            continue
-        plt.errorbar( prodList, loggs[algo]['time_mean'],
-        yerr = loggs[algo]['time_std'], 
-        linestyle="-", marker = 'o', label = algo, linewidth=2.0)
-    plt.ylabel('Time (s)')
-    plt.xlabel('Number of products')
-    plt.title('Computational Performance')
-    plt.legend(loc='best')
-    plt.xlim([0,xlim])
-    if flag_savefig == True:
-        plt.savefig(fname[:-4]+'_time.png')  
-    plt.show()
+    params = {'fname':fname[:-4]+'_time.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
+        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Time (s)','logname':'time','xsname':xsname}
+    get_plot_subroutine(params)
 
 
     ###plot2
-    for algo in algonames:
-        plt.errorbar( prodList, loggs[algo]['revPctErr_mean'],
-        yerr = loggs[algo]['revPctErr_std'], 
-        linestyle="-", marker = 'o', label = algo, linewidth=2.0)
-    plt.ylabel('Revenue Pct Err')
-    plt.xlabel('Number of products')
-    plt.title('Approx. Quality 1')
-    plt.legend(loc='best')
-    # plt.ylim([-.1,1.1])
-    plt.xlim([0,xlim])
-    if flag_savefig == True:
-        plt.savefig(fname[:-4]+'_revPctErr.png')  
-    plt.show()
+    params = {'fname':fname[:-4]+'_revPctErr.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
+        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Pct. Err. in Revenue','logname':'revPctErr','xsname':xsname}
+    get_plot_subroutine(params)
+
 
     ###plot3
-    for algo in algonames:
-        plt.plot( prodList, loggs[algo]['setOlp_mean'],
-        linestyle="-", marker = 'o', label = algo, linewidth=2.0)
-    plt.ylabel('Set Overlap')
-    plt.xlabel('Number of products')
-    plt.title('Approx. Quality 2')
-    plt.legend(loc='best')
-    # plt.ylim([-.1,1.1])
-    plt.xlim([0,xlim])
-    if flag_savefig == True:
-        plt.savefig(fname[:-4]+'_setOlp.png')  
-    plt.show()
+    params = {'fname':fname[:-4]+'_setOlp.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
+        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Pct. Set Overlap','logname':'setOlp','xsname':xsname}
+    get_plot_subroutine(params)
+
 
     ###plot4
-    for algo in algonames:
-        plt.plot( prodList, loggs[algo]['corrSet_mean'],
-        linestyle="-", marker = 'o', label = algo, linewidth=2.0)
-    plt.ylabel('Pct. Correct Set Output')
-    plt.xlabel('Number of products')
-    plt.title('Approx. Quality 3')
-    plt.legend(loc='best')
-    # plt.ylim([-.1,1.1])
-    plt.xlim([0,xlim])
-    if flag_savefig == True:
-        plt.savefig(fname[:-4]+'_corrSet.png')  
-    plt.show()
+    # params = {'fname':fname[:-4]+'_corrSet.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
+    #     'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Pct. Correct Set Output','logname':'corrSet','xsname':xsname}
+    # get_plot_subroutine(params)
+
 
 
 if __name__ == '__main__':
 
-    # fname = './output/results20170524/cap_loggs_synthetic_10000_20170525_0530AM.pkl'
-    # xlim = 10001
 
-    # fname = './output/results20170524/loggs_synthetic_1000_20170525_0505AM.pkl'
-    # xlim = 1001
+    fname = './output/gen_loggs_synthetic_lenF_400_20170525_1155PM.pkl'
+    xlim = 401
+    xsname = 'lenFeasibles'
+    xlab = 'Number of Assortments'
 
-    fname = './output/cap_loggs_synthetic_800_20170525_0440PM.pkl'
-    xlim = 801
-
-    get_plots(fname,flag_savefig=True,xlim=xlim)
+    get_plots(fname,flag_savefig=True,xlim=xlim,xsname=xsname,xlab=xlab)

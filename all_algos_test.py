@@ -104,16 +104,16 @@ def compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSetBenchmark,eps
           badError = badError +1
   return loggs,badError
 
-def generate_instance_general(price_range,prod,genMethod,iterNum,C=None):
+def generate_instance_general(price_range,prod,genMethod,iterNum,C=None,lenFeas=None):
 
   p,v = generate_instance(price_range,prod,genMethod,iterNum)
 
 
   #arbitrary
-  if prod < 5000:
+  if lenFeas is None:
     nsets = int(prod**1.5)
-  else:#running into memory error
-    nsets = int(1e5)
+  else:
+    nsets = lenFeas
 
   feasibles = []
   C = 0
@@ -126,99 +126,29 @@ def generate_instance_general(price_range,prod,genMethod,iterNum,C=None):
 
   return p,v,feasibles,int(C)
 
-
-
-def main2():
+def run_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synthetic'):
 
   #parameters required
-  flag_savedata = True
   random.seed(10)
-  np.random.seed(10)
-  price_range = 1000        #denotes highest possible price of a product
-  eps         =  0.1        #tolerance
-  N           =  30 #2#     #number of times Monte Carlo simulation will run
-  prodList    = [100,5000] #[100,200,400,600,800,1000]
-  genMethod   = 'synthetic' #'bppData'#
-  algos       = {'Linear-Search':genAst_oracle,'Assort-Exact-G':genAst_AssortExact,'Assort-LSH-G':genAst_AssortLSH}
-  benchmark   = 'Linear-Search'
-
-
-  loggs = get_log_dict(prodList,N,algos,price_range,eps,genMethod)
-  loggs['additional']['lenfeasibles'] = np.zeros(len(prodList))
-  badError = 0
-  t1= time.time()
-  for i,prod in enumerate(prodList):
-      
-    t0 = time.time()
-    t = 0
-    while(t<N):
-
-        print 'Iteration number is ', str(t+1),' of ',N,', for prod size ',prod
-
-
-        #generating the price 
-        p,v,feasibles,C = generate_instance_general(price_range,prod,genMethod,t)
-        # print feasibles[:1],len(feasibles[0]),C
-        loggs['additional']['C'][i,t] = C
-
-        meta = {'eps':eps,'feasibles':feasibles}
-
-        if 'Assort-Exact-G' in algos:
-          meta['db_exact'],_,meta['normConst'] = preprocess(prod, C, p, 'general_case_exact',feasibles=feasibles)
-        if 'Assort-LSH-G' in algos:
-          meta['db_LSH'],_,_ = preprocess(prod, C, p, 'general_case_LSH', nEst=100,nCand=200,feasibles=feasibles)#Hardcoded values
-
-        #run algos
-        maxSet,maxSetBenchmark = None, None
-        for algoname in algos:
-          
-          loggs[algoname]['rev'][i,t],maxSet,loggs[algoname]['time'][i,t] = algos[algoname](prod,C,p,v,meta)
-          print '\tExecuted ',algoname,' in ',loggs[algoname]['time'][i,t],'sec.'#,' Set:',maxSet
-          if algoname==benchmark:
-            maxSetBenchmark = maxSet
-        loggs,badError = compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSet,maxSetBenchmark,eps)
-
-        t = t+1    
-      
-
-    
-    print 'Experiments (',N,' sims) for number of products ',prod, ' is done.'  
-    print 'Cumulative time taken is', time.time() - t0,'\n'    
-    loggs = compute_summary_stats(algos,loggs,benchmark,i)
-    loggs['additional']['lenfeasibles'][i] = len(feasibles)
-
-    #dump it incrementally for each product size
-    if flag_savedata == True:
-      pickle.dump(loggs,open('./output/gen_loggs_'+genMethod+'_'+str(prod)+'_'+datetime.datetime.now().strftime("%Y%m%d_%I%M%p")+'.pkl','wb'))
-
-  print '\nAll experiments done. Total time taken is', time.time()  - t1,'\n\n'
-  print "Summary:"
-  for algoname in algos:
-    print '\t',algoname,'time_mean',loggs[algoname]['time_mean']
-    print '\t',algoname,'revPctErr_mean',loggs[algoname]['revPctErr_mean']
-
-  return loggs
-
-
-
-
-
-def main():
-
-  #parameters required
-  flag_savedata = True
   np.random.seed(1000)
-  C           = 50        #capacity of assortment
   price_range = 1000      #denotes highest possible price of a product
   eps         = 0.1       #tolerance
-  N           = 14 #30 #   #number of times Monte Carlo simulation will run
-  prodList    = [100,400,5000] #[100, 200, 400, 600, 800, 1000,5000,10000] #
-  genMethod   = 'synthetic' #'bppData' #
-  algos = {'Assort-Exact':capAst_AssortExact,'Assort-LSH':capAst_AssortLSH,'Adxopt':capAst_adxopt,'LP':capAst_LP}#,'Static-MNL':capAst_paat}
-  benchmark = 'LP'#'Static-MNL'#
+  N           = 30 #   #number of times Monte Carlo simulation will run
+  if flag_capacitated == True:
+    C           = 50        #capacity of assortment
+    prodList    = [100, 250, 500, 1000, 2500,5000,10000] #[100,200,300] #
+    algos = {'Assort-Exact':capAst_AssortExact,'Assort-LSH':capAst_AssortLSH,'Adxopt':capAst_adxopt,'LP':capAst_LP}#,'Static-MNL':capAst_paat}
+    benchmark = 'LP'#'Static-MNL'#
+    loggs = get_log_dict(prodList,N,algos,price_range,eps,genMethod,C)
+
+  else:
+    prodList    = [100,200,400,800,1600]
+    algos       = {'Linear-Search':genAst_oracle,'Assort-Exact-G':genAst_AssortExact,'Assort-LSH-G':genAst_AssortLSH}
+    benchmark   = 'Linear-Search'
+    loggs = get_log_dict(prodList,N,algos,price_range,eps,genMethod)
+    loggs['additional']['lenFeasibles'] = np.zeros(len(prodList))
 
 
-  loggs = get_log_dict(prodList,N,algos,price_range,eps,genMethod,C)
   badError = 0
   t1= time.time()
   for i,prod in enumerate(prodList):
@@ -229,20 +159,33 @@ def main():
 
       print 'Iteration number is ', str(t+1),' of ',N,', for prod size ',prod
 
-      #generating the price 
-      p,v = generate_instance(price_range,prod,genMethod,t)
-
+      #generating the price
       meta = {'eps':eps}
+      if flag_capacitated == True:
+        p,v = generate_instance(price_range,prod,genMethod,t)
+      else:
+        p,v,feasibles,C = generate_instance_general(price_range,prod,genMethod,t)
+        loggs['additional']['C'][i,t] = C
+        meta['feasibles'] = feasibles
+
+      #preprocessing for proposed algos
       if 'Assort-Exact' in algos:
         meta['db_exact'],_,meta['normConst'] = preprocess(prod, C, p, 'special_case_exact')
       if 'Assort-LSH' in algos:
         meta['db_LSH'],_,_ = preprocess(prod, C, p, 'special_case_LSH', nEst=20,nCand=80)#Hardcoded values
+      if 'Assort-Exact-G' in algos:
+        meta['db_exact'],_,meta['normConst'] = preprocess(prod, C, p, 'general_case_exact',feasibles=feasibles)
+      if 'Assort-LSH-G' in algos:
+        meta['db_LSH'],_,_ = preprocess(prod, C, p, 'general_case_LSH', nEst=20,nCand=80,feasibles=feasibles)#Hardcoded values
+
+
 
       #run algos
       maxSetBenchmark = None
       for algoname in algos:
+        print '\tExecuting ',algoname
         loggs[algoname]['rev'][i,t],loggs[algoname]['maxSet'][(i,t)],loggs[algoname]['time'][i,t] = algos[algoname](prod,C,p,v,meta)
-        print '\tExecuted ',algoname,' in ',loggs[algoname]['time'][i,t],'sec.'
+        print '\t\tTime taken is ',loggs[algoname]['time'][i,t],'sec.'
 
         if algoname==benchmark:
           maxSetBenchmark = copy.deepcopy(loggs[algoname]['maxSet'][(i,t)])
@@ -256,10 +199,15 @@ def main():
     print 'Experiments (',N,' sims) for number of products ',prod, ' is done.'  
     print 'Cumulative time taken is', time.time() - t0,'\n'   
     loggs = compute_summary_stats(algos,loggs,benchmark,i)
+    if flag_capacitated != True:
+      loggs['additional']['lenFeasibles'][i] = len(feasibles)
 
     #dump it incrementally for each product size
     if flag_savedata == True:
-      pickle.dump(loggs,open('./output/cap_loggs_'+genMethod+'_'+str(prod)+'_'+datetime.datetime.now().strftime("%Y%m%d_%I%M%p")+'.pkl','wb'))
+      if flag_capacitated == True:
+        pickle.dump(loggs,open('./output/cap_loggs_'+genMethod+'_prod_'+str(prod)+'_'+datetime.datetime.now().strftime("%Y%m%d_%I%M%p")+'.pkl','wb'))
+      else:
+        pickle.dump(loggs,open('./output/gen_loggs_'+genMethod+'_prod_'+str(prod)+'_'+datetime.datetime.now().strftime("%Y%m%d_%I%M%p")+'.pkl','wb'))
 
   print '\nAll experiments done. Total time taken is', time.time()  - t1,'\n\n'
   print "Summary:"
@@ -269,6 +217,85 @@ def main():
 
   return loggs
 
+def run_lenFeas_experiment(flag_savedata=True,genMethod='synthetic'):
+
+  #parameters required
+  random.seed(10)
+  np.random.seed(1000)
+  price_range = 1000      #denotes highest possible price of a product
+  eps         = 0.1       #tolerance
+  N           = 30 #   #number of times Monte Carlo simulation will run
+  prod        = 1000
+  lenFeasibles= [100,200,400,800,1600,3200,6400,12800,25600,51200]
+  algos       = {'Linear-Search':genAst_oracle,'Assort-Exact-G':genAst_AssortExact,'Assort-LSH-G':genAst_AssortLSH}
+  benchmark   = 'Linear-Search'
+  loggs = get_log_dict(lenFeasibles,N,algos,price_range,eps,genMethod) #hack
+  loggs['additional']['lenFeasibles'] = lenFeasibles
+
+
+  badError = 0
+  t1= time.time()
+  for i,lenFeas in enumerate(lenFeasibles):
+      
+    t0 = time.time()
+    t = 0
+    while(t<N):
+
+      print 'Iteration number is ', str(t+1),' of ',N,', for no. of assortments ',lenFeas
+
+      #generating the price
+      meta = {'eps':eps}
+      p,v,feasibles,C = generate_instance_general(price_range,prod,genMethod,t,lenFeas=lenFeas)
+      loggs['additional']['C'][i,t] = C
+      meta['feasibles'] = feasibles
+
+      #preprocessing for proposed algos
+      if 'Assort-Exact-G' in algos:
+        meta['db_exact'],_,meta['normConst'] = preprocess(prod, C, p, 'general_case_exact',feasibles=feasibles)
+      if 'Assort-LSH-G' in algos:
+        meta['db_LSH'],_,_ = preprocess(prod, C, p, 'general_case_LSH', nEst=20,nCand=80,feasibles=feasibles)#Hardcoded values
+
+
+
+      #run algos
+      maxSetBenchmark = None
+      for algoname in algos:
+        print '\tExecuting ',algoname
+        loggs[algoname]['rev'][i,t],loggs[algoname]['maxSet'][(i,t)],loggs[algoname]['time'][i,t] = algos[algoname](prod,C,p,v,meta)
+        print '\t\tTime taken is ',loggs[algoname]['time'][i,t],'sec.'
+
+        if algoname==benchmark:
+          maxSetBenchmark = copy.deepcopy(loggs[algoname]['maxSet'][(i,t)])
+
+      loggs,badError = compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSetBenchmark,eps)
+
+      t = t+1    
+      
+
+    
+    print 'Experiments (',N,' sims) for number of feasibles ',lenFeas, ' is done.'  
+    print 'Cumulative time taken is', time.time() - t0,'\n'   
+    loggs = compute_summary_stats(algos,loggs,benchmark,i)
+
+    #dump it incrementally for each product size
+    if flag_savedata == True:
+      pickle.dump(loggs,open('./output/gen_loggs_'+genMethod+'_lenF_'+str(lenFeas)+'_'+datetime.datetime.now().strftime("%Y%m%d_%I%M%p")+'.pkl','wb'))
+
+  print '\nAll experiments done. Total time taken is', time.time()  - t1,'\n\n'
+  print "Summary:"
+  for algoname in algos:
+    print '\t',algoname,'time_mean',loggs[algoname]['time_mean']
+    print '\t',algoname,'revPctErr_mean',loggs[algoname]['revPctErr_mean']
+
+  return loggs
+
+
 if __name__=='__main__':
-  loggs = main()
-  # get_plots(fname=None,flag_savefig=False,xlim=5001,loggs=loggs)
+  # loggs1 = run_experiment(flag_capacitated = True,flag_savedata = True,genMethod='synthetic')
+  # loggs2 = run_experiment(flag_capacitated = True,flag_savedata = True,genMethod='bppData')
+  # loggs3 = run_experiment(flag_capacitated = False,flag_savedata = True,genMethod='synthetic')
+  # loggs4 = run_experiment(flag_capacitated = False,flag_savedata = True,genMethod='bppData')
+
+  loggs5 = run_lenFeas_experiment(flag_savedata = True,genMethod='synthetic')
+  loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='bppData')
+  

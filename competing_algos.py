@@ -38,11 +38,7 @@ def capAst_oracle(prod, C, p, v,meta=None):
             maxRevSet = ast
     timeTaken = time.time() - st      
     
-    # print " " 
-    # print "Results for oracle"
-    print "Products in the optimal assortment are", maxRevSet 
-    # print "Optimal revenue is", maxRev
-    # print 'Time taken for running the oracle is', timeTaken
+    print "capAst_oracle: Products in the optimal assortment are", maxRevSet 
     
     return maxRev, maxRevSet,timeTaken
         
@@ -71,9 +67,7 @@ def genAst_oracle(prod,C,p,v,meta=None):
             maxRevSet = ast
     timeTaken = time.time() - st      
     
-    # print "Products in the optimal assortment are", maxRevSet 
-    # print "Optimal revenue is", maxRev
-    # print 'Time taken for running the oracle is', timeTaken
+    print "genAst_oracle: Products in the optimal assortment are", maxRevSet 
     
     return maxRev, set(maxRevSet),timeTaken
         
@@ -210,11 +204,21 @@ def capAst_LP(prod, C, p, v, meta = None):
     # The objective is to maximize expected revenue
     m.setObjective(sum(item[i]*p[i] for i in items), GRB.MAXIMIZE)
 
-    # constraints
-    m.addConstr(sum(item[i] for i in items) == 1, 'sum2one')
-    m.addConstr(sum(item[i]*1.0/v[i] for i in items[1:]) - item[0]*C/v[0]<= 0, "capacity")
+    # constraint1
+    sum1 = 0
+    for i in items:
+        sum1 += item[i]
+    m.addConstr(sum1 == 1, 'sum2one')
+
+    #constraint2
+    sum2 = 0
     for i in items[1:]:
-        m.addConstr(item[i]*1.0/v[i] - item[0]*1.0/v[0] <= 0, 'order_'+str(i))
+        sum2 += item[i]/v[i]
+    m.addConstr(sum2 - item[0]*C/v[0] <= 0, "capacity")
+
+    #constraint3 (many)
+    for i in items[1:]:
+        m.addConstr(item[i]/v[i] - item[0]/v[0] <= 0, 'order_'+str(i))
 
     # Solve
     m.setParam(GRB.Param.OutputFlag, 0)
