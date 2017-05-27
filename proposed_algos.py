@@ -25,7 +25,7 @@ def preprocess(prod, C, p, algo, nEst=10,nCand=40,feasibles = None):
  
     if ((algo == 'special_case_LSH') | (algo=='special_case_exact')):
         U = np.eye(prod)
-        normConst = np.sqrt(1+np.max(p)**2)
+        normConst = np.sqrt(2+np.max(p)**2)
         ptsTemp = np.concatenate((U*np.array(p[1:]),U), axis=1)*1.0/normConst
         # print ptsTemp,ptsTemp.shape,1.0/normConst
         feasibles = [0 for i in range(ptsTemp.shape[0])] #dummy

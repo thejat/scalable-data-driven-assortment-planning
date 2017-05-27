@@ -8,7 +8,6 @@ Created on Fri Jan 29 05:13:14 2016
 from itertools import combinations
 import numpy as np
 import time, sys
-from gurobipy import *
 
 ######### ORACLE #################################
 
@@ -188,64 +187,152 @@ def capAst_static_mnl(prod,C,p,v,meta=None):
 ######### LP #################################
 
 
+# from gurobipy import *
+# def capAst_LP(prod, C, p, v, meta = None):
+#     #v and p are expected to be n+1 and n+1 length lists respectively 
+#     st = time.time()    
+
+#     # Model
+#     m = Model("capAst_LP")
+
+#     items = range(prod+1)
+
+#     item = {}
+#     for i in items:
+#       item[i] = m.addVar(lb=0,name='item_'+str(i))
+
+#     # The objective is to maximize expected revenue
+#     m.setObjective(sum(item[i]*p[i] for i in items), GRB.MAXIMIZE)
+
+#     # constraint1
+#     sum1 = 0
+#     for i in items:
+#         sum1 += item[i]
+#     m.addConstr(sum1 == 1, 'sum2one')
+
+#     #constraint2
+#     sum2 = 0
+#     for i in items[1:]:
+#         sum2 += item[i]/v[i]
+#     m.addConstr(sum2 - item[0]*C/v[0] <= 0, "capacity")
+
+#     #constraint3 (many)
+#     for i in items[1:]:
+#         m.addConstr(item[i]/v[i] - item[0]/v[0] <= 0, 'order_'+str(i))
+
+#     # Solve
+#     m.setParam(GRB.Param.OutputFlag, 0)
+#     m.optimize()
+
+#     timeTaken = time.time() - st      
+#     # print " " 
+#     # print "Results for LP"
+#     print '\t\tTime taken for running the LP is', timeTaken
+#     maxRev = 0
+#     maxRevSet = []
+#     if m.status == GRB.Status.OPTIMAL:
+#         maxRev = m.objVal
+#         # print "Optimal revenue is", maxRev
+
+#         itemx = m.getAttr('x', item)
+#         for i in items[1:]:
+#             if item[i].x*v[0]/max(v[i],0.00001)/max(item[0].x,0.00001) > 0.0001:
+#                 # print('%s %g' % (i, itemx[i]))
+#                 maxRevSet.append(int(i))
+
+#         print "\t\tProducts in the LP optimal assortment are", maxRevSet 
+
+#     else:
+#         print('No solution')
+
+#     return maxRev, set(maxRevSet),timeTaken
+
+
+import cplex
+from cplex.exceptions import CplexError
+
 def capAst_LP(prod, C, p, v, meta = None):
-    #v and p are expected to be n+1 and n+1 length lists respectively 
+
     st = time.time()    
 
-    # Model
-    m = Model("capAst_LP")
+    try:
+        my_prob = cplex.Cplex()
 
-    items = range(prod+1)
+        my_obj = list(p) #including the 0th coordinate
+        my_ub = [cplex.infinity for i in p] #omitting lb as 0
+        my_colnames = ['z_'+str(i) for i in range(prod+1)]
+        my_rhs = [1]+[0 for i in range(prod+1)]
+        my_rownames = ['sum2one','capaciy'] + ['lpr_'+str(i+1) for i in range(prod)]
+        my_sense = ''.join(['E']+['L' for i in range(prod+1)])
+        # print my_obj
+        # print my_ub
+        # print my_colnames
+        # print my_rhs
+        # print my_rownames
+        # print my_sense
 
-    item = {}
-    for i in items:
-      item[i] = m.addVar(lb=0,name='item_'+str(i))
+        my_prob.objective.set_sense(my_prob.objective.sense.maximize)
+        my_prob.variables.add(obj = my_obj, ub = my_ub, names = my_colnames)
+        
+        # print my_prob.variables.get_lower_bounds()
+        # print my_prob.variables.get_upper_bounds()
+        # print my_prob.variables.get_names()
 
-    # The objective is to maximize expected revenue
-    m.setObjective(sum(item[i]*p[i] for i in items), GRB.MAXIMIZE)
+        rows = []
+        rows.append([range(prod+1),[1 for i in range(prod+1)]])
+        vcoeff_vec = [-C]
+        for i in range(1,prod+1):
+            vcoeff_vec.append(round(v[0]*1.0/v[i],7))
+        rows.append([range(prod+1),vcoeff_vec])
+        for i in range(1,prod+1):
+            inequ_vec = [-v[i]]
+            for j in range(1,prod+1):
+                if j==i:
+                    inequ_vec.append(v[0])
+                else:
+                    inequ_vec.append(0)
+            rows.append([range(prod+1),inequ_vec])
 
-    # constraint1
-    sum1 = 0
-    for i in items:
-        sum1 += item[i]
-    m.addConstr(sum1 == 1, 'sum2one')
+        # print rows
 
-    #constraint2
-    sum2 = 0
-    for i in items[1:]:
-        sum2 += item[i]/v[i]
-    m.addConstr(sum2 - item[0]*C/v[0] <= 0, "capacity")
+        my_prob.linear_constraints.add(lin_expr = rows,
+                                    senses = my_sense,
+                                    rhs = my_rhs,
+                                    names = my_rownames)
 
-    #constraint3 (many)
-    for i in items[1:]:
-        m.addConstr(item[i]/v[i] - item[0]/v[0] <= 0, 'order_'+str(i))
+        my_prob.set_log_stream(None)
+        my_prob.set_error_stream(None)
+        my_prob.set_warning_stream(None)
+        my_prob.set_results_stream(None)
+        my_prob.solve()
 
-    # Solve
-    m.setParam(GRB.Param.OutputFlag, 0)
-    m.optimize()
+    except CplexError, exc:
+        print exc
+        return
 
+    # numrows = my_prob.linear_constraints.get_num()
+    # numcols = my_prob.variables.get_num()
+    # print numrows
+    # print numcols
+    
+    # print "\t\tLP cplex status = ", my_prob.solution.get_status(), ":", my_prob.solution.status[my_prob.solution.get_status()]
+    maxRev = my_prob.solution.get_objective_value()
+    
     timeTaken = time.time() - st      
     # print " " 
     # print "Results for LP"
     print '\t\tTime taken for running the LP is', timeTaken
-    maxRev = 0
+
     maxRevSet = []
-    if m.status == GRB.Status.OPTIMAL:
-        maxRev = m.objVal
-        # print "Optimal revenue is", maxRev
+    x = my_prob.solution.get_values()
+    for i in range(1,prod+1):
+        if x[i]*v[0]/max(v[i],1e-7)/max(x[0],1e-7) > 1e-3:
+            maxRevSet.append(int(i))
 
-        itemx = m.getAttr('x', item)
-        for i in items[1:]:
-            if item[i].x*v[0]/max(v[i],0.00001)/max(item[0].x,0.00001) > 0.0001:
-                # print('%s %g' % (i, itemx[i]))
-                maxRevSet.append(int(i))
+    print "\t\tProducts in the LP cplex optimal assortment are", maxRevSet
 
-        print "\t\tProducts in the LP optimal assortment are", maxRevSet 
+    return maxRev,set(maxRevSet),timeTaken
 
-    else:
-        print('No solution')
-
-    return maxRev, set(maxRevSet),timeTaken
 
 
 

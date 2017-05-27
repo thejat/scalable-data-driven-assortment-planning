@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pickle
@@ -77,10 +79,12 @@ def get_plots(fname=None,flag_savefig=False,xlim=5001,loggs=None,xsname='prodLis
 if __name__ == '__main__':
 
 
-    # fname = './output/gen_loggs_synthetic_lenF_51200_20170526_0102AM.pkl'
-    fname = './output/results20170525final/gen_loggs_bppData_lenF_51200_20170526_0158AM.pkl'
-    xlim = 51201
-    xsname = 'lenFeasibles'
-    xlab = 'Number of Assortments'
 
-    get_plots(fname,flag_savefig=True,xlim=xlim,xsname=xsname,xlab=xlab)
+    fname = './output/cap_loggs_synthetic_prod_15000_20170526_0835PM.pkl'
+    xlim = 15001
+    get_plots(fname,flag_savefig=True,xlim=xlim)
+
+
+    # fname = './output/results20170526_dependence_on_nest_ncand/gen_loggs_bppData_lenF_51200_nCand_160_nEst_40_20170526_1124AM.pkl'
+    # xsname,xlab = 'lenFeasibles','Number of Assortments'
+    # get_plots(fname,flag_savefig=True,xlim=xlim,xsname=xsname,xlab=xlab)
