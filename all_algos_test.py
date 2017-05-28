@@ -1,6 +1,5 @@
 import numpy as np
-import time, pprint, pickle, datetime, random, os, copy
-from plots_paper import get_plots
+import time, pickle, datetime, random, os, copy, collections
 from real_data import get_feasibles_realdata
 
 from competing_algos import capAst_static_mnl, capAst_LP, capAst_adxopt, genAst_oracle
@@ -60,7 +59,7 @@ def get_log_dict(prodList,N,algos,price_range,eps,C=None):
       output[name] = np.zeros(len(prodList)) 
     return output
 
-  loggs = {}
+  loggs = collections.OrderedDict()
   loggs['additional'] = {'prodList':prodList,'algonames':algos.keys(),'N':N,'eps':eps,'price_range':price_range}
   if C is not None:
     loggs['additional']['C'] = C
@@ -135,7 +134,7 @@ def generate_instance_general(price_range,prod,genMethod,iterNum,lenFeas=None,re
   return p,v,feasibles,int(C),prod
 
 
-def run_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synthetic'):
+def run_prod_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synthetic'):
 
   #parameters required
   random.seed(10)
@@ -149,13 +148,13 @@ def run_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synthetic
       prodList    = [100, 250, 500, 1000, 2500, 5000,10000,15000,20000] #[100,200,300] #
     else:
       prodList    = [100, 250, 500, 1000, 3000, 5000, 7000,10000]
-    algos = {'Assort-Exact':capAst_AssortExact,'Assort-LSH':capAst_AssortLSH,'Adxopt':capAst_adxopt,'LP':capAst_LP}#,'Static-MNL':capAst_paat}
+    algos = collections.OrderedDict({'Assort-Exact':capAst_AssortExact,'Assort-LSH':capAst_AssortLSH,'Adxopt':capAst_adxopt,'LP':capAst_LP})#,'Static-MNL':capAst_paat}
     benchmark = 'LP'#'Static-MNL'#
     loggs = get_log_dict(prodList,N,algos,price_range,eps,C)
 
   else:
     prodList    = [100,200,400,800,1600]
-    algos       = {'Linear-Search':genAst_oracle,'Assort-Exact-G':genAst_AssortExact,'Assort-LSH-G':genAst_AssortLSH}
+    algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-Exact-G':genAst_AssortExact,'Assort-LSH-G':genAst_AssortLSH})
     benchmark   = 'Linear-Search'
     loggs = get_log_dict(prodList,N,algos,price_range,eps)
     loggs['additional']['lenFeasibles'] = np.zeros(len(prodList))
@@ -239,10 +238,12 @@ def run_lenFeas_experiment(flag_savedata=True,genMethod='synthetic',nEst=20,nCan
   N           = 50 #   #number of times Monte Carlo simulation will run
   prod        = 1000
   lenFeasibles= [100,200,400,800,1600,3200,6400,12800,25600,51200]
-  algos       = {'Linear-Search':genAst_oracle,'Assort-LSH-G':genAst_AssortLSH,'Assort-Exact-G':genAst_AssortExact}
+  algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-LSH-G':genAst_AssortLSH,'Assort-Exact-G':genAst_AssortExact})
   benchmark   = 'Linear-Search'
   loggs = get_log_dict(lenFeasibles,N,algos,price_range,eps) #hack
   loggs['additional']['lenFeasibles'] = lenFeasibles
+  loggs['additional']['nEst'] = nEst
+  loggs['additional']['nCand'] = nCand
 
 
   badError = 0
@@ -301,7 +302,6 @@ def run_lenFeas_experiment(flag_savedata=True,genMethod='synthetic',nEst=20,nCan
 
   return loggs
 
-
 def run_real_ast_experiment(flag_savedata=True,nEst=20,nCand=80):
 
   #parameters required
@@ -314,7 +314,7 @@ def run_real_ast_experiment(flag_savedata=True,nEst=20,nCand=80):
     {'fname':'freq_itemset_data/foodmartFIM0p0001_233231_txns4141.csv','isCSV':True,'min_ast_length':4},
     {'fname':'freq_itemset_data/chains0p00001_txns1112949.txt','isCSV':False,'min_ast_length':5},
     {'fname':'freq_itemset_data/OnlineRetail0p000001_txns540455.txt','isCSV':False,'min_ast_length':3}]
-  algos       = {'Linear-Search':genAst_oracle,'Assort-LSH-G':genAst_AssortLSH,'Assort-Exact-G':genAst_AssortExact}
+  algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-LSH-G':genAst_AssortLSH,'Assort-Exact-G':genAst_AssortExact})
   benchmark   = 'Linear-Search'
   loggs = get_log_dict(real_data_list,N,algos,price_range,eps) #hack
   loggs['additional']['real_data_list'] = real_data_list
@@ -382,27 +382,28 @@ def run_real_ast_experiment(flag_savedata=True,nEst=20,nCand=80):
 
 if __name__=='__main__':
 
-  #General case, dependense on lsh parameters
-  #bpp data and synthetic data
+
+  #1. General case, dependense on lsh parameters: bpp data and synthetic data
 
   # loggs5 = run_lenFeas_experiment(flag_savedata = True,genMethod='synthetic',nEst=40,nCand=160)
   # loggs5 = run_lenFeas_experiment(flag_savedata = True,genMethod='synthetic',nEst=100,nCand=200)
-  loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='synthetic',nEst=20,nCand=80)
+  # loggs5 = run_lenFeas_experiment(flag_savedata = True,genMethod='synthetic',nEst=20,nCand=80)
   # loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='bppData',nEst=40,nCand=160)
   # loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='bppData',nEst=100,nCand=200)
   # loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='bppData',nEst=20,nCand=80)
 
 
-  #Special case (cap constrained)
-  #bpp data and synthetic data
+  #2. General case: frequent itemset data
+  
+  # loggs7 = run_real_ast_experiment(flag_savedata = True,nEst=40,nCand=160)
 
-  # loggs1 = run_experiment(flag_capacitated = True,flag_savedata = True,genMethod='synthetic')
-  # loggs2 = run_experiment(flag_capacitated = True,flag_savedata = True,genMethod='bppData')
-  # loggs3 = run_experiment(flag_capacitated = False,flag_savedata = True,genMethod='synthetic')
-  # loggs4 = run_experiment(flag_capacitated = False,flag_savedata = True,genMethod='bppData')
+  #3. Special case (cap constrained): bpp data and synthetic data
 
-  #general case
-  #frequent itemset data
-  loggs7 = run_real_ast_experiment(flag_savedata = True,nEst=40,nCand=160)
+  loggs1 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='synthetic')
+  loggs2 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='bppData')
+  ## loggs3 = run_prod_experiment(flag_capacitated = False,flag_savedata = True,genMethod='synthetic')
+  ## loggs4 = run_prod_experiment(flag_capacitated = False,flag_savedata = True,genMethod='bppData')
+
+
 
   
