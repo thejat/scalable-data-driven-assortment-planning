@@ -147,7 +147,7 @@ def run_prod_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synt
     if genMethod=='synthetic':
       prodList    = [100, 250, 500, 1000, 2500, 5000,10000,15000,20000] #[100,200,300] #
     else:
-      prodList    = [100, 250, 500, 1000, 3000, 5000, 7000,10000]
+      prodList    = [100, 250, 500, 1000, 3000, 5000, 7000,10000,20000]
     algos = collections.OrderedDict({'Assort-Exact':capAst_AssortExact,'Assort-LSH':capAst_AssortLSH,'Adxopt':capAst_adxopt,'LP':capAst_LP})#,'Static-MNL':capAst_paat}
     benchmark = 'LP'#'Static-MNL'#
     loggs = get_log_dict(prodList,N,algos,price_range,eps,C)
