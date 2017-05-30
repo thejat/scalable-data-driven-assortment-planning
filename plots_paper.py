@@ -17,7 +17,6 @@ plt.rcParams.update({'legend.fontsize': 'xx-large',
 
 
 def get_plot_subroutine(params):
-    # plt.gca().cla()
     fig = plt.figure()
     ax = fig.add_subplot(111)
     xs = params['loggs']['additional'][params['xsname']]
@@ -284,6 +283,29 @@ def get_merged_plots(fname_prefix,fnames,flag_savefig,nest_ncand,xlim,dat):
         get_merged_plot_subroutine(params)
 
 
+def get_static_mnl_plot(fname,flag_savefig,xlim,savefname):
+
+    loggs = pickle.load(open(fname,'rb'))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    xs = loggs['additional']['prodList']
+    ys_lb  = np.asarray([np.percentile(loggs['Static-MNL']['time'][i,:],5) for i in range(len(xs))])
+    ys_ub  = np.asarray([np.percentile(loggs['Static-MNL']['time'][i,:],95) for i in range(len(xs))])
+    ax.fill_between(xs, ys_lb, ys_ub, alpha=0.5, edgecolor='#CC4F1B', facecolor='#FF9848')
+    ys = np.asarray([np.mean(loggs['Static-MNL']['time'][i,:]) for i in range(len(xs))])
+    ax.plot(xs, ys,label='Static-MNL')
+
+    ax.legend(loc='best', bbox_to_anchor=(0.5, 1.05), ncol=3)
+    plt.ylabel('Time (s)')
+    plt.xlabel('Number of Items')
+    plt.legend(loc='best')
+    plt.xlim([0,xlim])
+
+    if flag_savefig == True:
+        plt.savefig(savefname)  
+    # plt.show()
+
 if __name__ == '__main__':
 
     ##1. DONE general as a function of assortment set size: 
@@ -312,10 +334,12 @@ if __name__ == '__main__':
 
     ##3. DONE capacity constrained: 
     # # #bpp
-    xlim,fname = 10001,'./output/results20170528_final_vs_prod/cap_loggs_bppData_prod_10000_20170529_0252AM.pkl'
-    timedata,opt_ast_lens,data = get_plots(fname=fname,flag_savefig=True,xlim=xlim,
-        savefname_common='./output/figures/cap_real_price_prod')
+    # xlim,fname = 20001,'./output/results20170528_final_vs_prod/cap_loggs_bppData_prod_20000_20170529_0459AM.pkl'
+    # timedata,opt_ast_lens,data = get_plots(fname=fname,flag_savefig=True,xlim=xlim,
+    #     savefname_common='./output/figures/cap_real_price_prod')
 
+    xlim,fname = 1001,'./output/results20170528_final_staticmnl/cap_loggs_bppData_prod_1000_20170529_0633AM.pkl'
+    get_static_mnl_plot(fname=fname,flag_savefig=True,xlim=xlim,savefname='./output/figures/cap_real_price_prod_staticmnl.png')
 
     # #synthetic
     # xlim,fname = 20001,'./output/results20170528_final_vs_prod/cap_loggs_synthetic_prod_20000_20170529_1214AM.pkl'

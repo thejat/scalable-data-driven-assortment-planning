@@ -377,6 +377,101 @@ def run_real_ast_experiment(flag_savedata=True,nEst=20,nCand=80):
   return loggs
 
 
+def run_prod_experiment_static_mnl(flag_capacitated=True,flag_savedata=True,genMethod='synthetic'):
+
+  #parameters required
+  random.seed(10)
+  np.random.seed(1000)
+  price_range = 1000      #denotes highest possible price of a product
+  eps         = 0.1       #tolerance
+  N           = 30 #   #number of times Monte Carlo simulation will run
+  if flag_capacitated == True:
+    C           = 50        #capacity of assortment
+    if genMethod=='synthetic':
+      prodList    = [100, 250, 500, 1000] #[100,200,300] #
+    else:
+      prodList    = [100, 250, 500, 1000]
+    algos = collections.OrderedDict({'Static-MNL':capAst_static_mnl,'LP':capAst_LP})
+    benchmark = 'LP'
+    loggs = get_log_dict(prodList,N,algos,price_range,eps,C)
+
+  else:
+    prodList    = [100,200,400,800,1600]
+    algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-Exact-G':genAst_AssortExact,'Assort-LSH-G':genAst_AssortLSH})
+    benchmark   = 'Linear-Search'
+    loggs = get_log_dict(prodList,N,algos,price_range,eps)
+    loggs['additional']['lenFeasibles'] = np.zeros(len(prodList))
+
+
+  badError = 0
+  t1= time.time()
+  for i,prod in enumerate(prodList):
+      
+    t0 = time.time()
+    t = 0
+    while(t<N):
+
+      print 'Iteration number is ', str(t+1),' of ',N,', for prod size ',prod
+
+      #generating the price
+      meta = {'eps':eps}
+      if flag_capacitated == True:
+        p,v = generate_instance(price_range,prod,genMethod,t)
+      else:
+        p,v,feasibles,C,prod = generate_instance_general(price_range,prod,genMethod,t)
+        loggs['additional']['C'][i,t] = C
+        meta['feasibles'] = feasibles
+
+      #preprocessing for proposed algos
+      if 'Assort-Exact' in algos:
+        meta['db_exact'],_,meta['normConst'] = preprocess(prod, C, p, 'special_case_exact')
+      if 'Assort-LSH' in algos:
+        meta['db_LSH'],_,_ = preprocess(prod, C, p, 'special_case_LSH', nEst=20,nCand=80)#Hardcoded values
+      if 'Assort-Exact-G' in algos:
+        meta['db_exact'],_,meta['normConst'] = preprocess(prod, C, p, 'general_case_exact',feasibles=feasibles)
+      if 'Assort-LSH-G' in algos:
+        meta['db_LSH'],_,_ = preprocess(prod, C, p, 'general_case_LSH', nEst=20,nCand=80,feasibles=feasibles)#Hardcoded values
+
+
+
+      #run algos
+      maxSetBenchmark = None
+      for algoname in algos:
+        print '\tExecuting ',algoname
+        loggs[algoname]['rev'][i,t],loggs[algoname]['maxSet'][(i,t)],loggs[algoname]['time'][i,t] = algos[algoname](prod,C,p,v,meta)
+        print '\t\tTime taken is ',loggs[algoname]['time'][i,t],'sec.'
+
+        if algoname==benchmark:
+          maxSetBenchmark = copy.deepcopy(loggs[algoname]['maxSet'][(i,t)])
+
+      loggs,badError = compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSetBenchmark,eps)
+
+      t = t+1    
+      
+
+    
+    print 'Experiments (',N,' sims) for number of products ',prod, ' is done.'  
+    print 'Cumulative time taken is', time.time() - t0,'\n'   
+    loggs = compute_summary_stats(algos,loggs,benchmark,i)
+    if flag_capacitated != True:
+      loggs['additional']['lenFeasibles'][i] = len(feasibles)
+
+    #dump it incrementally for each product size
+    if flag_savedata == True:
+      if flag_capacitated == True:
+        pickle.dump(loggs,open('./output/cap_loggs_'+genMethod+'_prod_'+str(prod)+'_'+datetime.datetime.now().strftime("%Y%m%d_%I%M%p")+'.pkl','wb'))
+      else:
+        pickle.dump(loggs,open('./output/gen_loggs_'+genMethod+'_prod_'+str(prod)+'_'+datetime.datetime.now().strftime("%Y%m%d_%I%M%p")+'.pkl','wb'))
+
+  print '\nAll experiments done. Total time taken is', time.time()  - t1,'\n\n'
+  print "Summary:"
+  for algoname in algos:
+    print '\t',algoname,'time_mean',loggs[algoname]['time_mean']
+    print '\t',algoname,'revPctErr_mean',loggs[algoname]['revPctErr_mean']
+
+  return loggs
+
+
 
 
 
@@ -399,11 +494,11 @@ if __name__=='__main__':
 
   #3. Special case (cap constrained): bpp data and synthetic data
 
-  loggs1 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='synthetic')
-  loggs2 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='bppData')
+  # loggs1 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='synthetic')
+  # loggs2 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='bppData')
   ## loggs3 = run_prod_experiment(flag_capacitated = False,flag_savedata = True,genMethod='synthetic')
   ## loggs4 = run_prod_experiment(flag_capacitated = False,flag_savedata = True,genMethod='bppData')
 
 
-
+  # loggs2 = run_prod_experiment_static_mnl(flag_capacitated = True,flag_savedata = True,genMethod='bppData')
   
