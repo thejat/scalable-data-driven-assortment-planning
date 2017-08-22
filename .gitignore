@@ -4,6 +4,7 @@ temp/
 algoStats/
 output/
 billion_price_data*
+freq_itemset_data*
 derby*
 document*
 metastore_db/
