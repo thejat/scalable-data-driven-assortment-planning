@@ -1,4 +1,4 @@
-### Code for the paper "Optimizing Revenue over Data-driven Assortments"
+### Code for the paper "Optimizing Revenue over Data-driven Assortments" (2017)
 
 This codebase is for algorithms proposed in the aforementioned [paper](https://arxiv.org/abs/1708.05510). It consists of the following python scripts:
 
