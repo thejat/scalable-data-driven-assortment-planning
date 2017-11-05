@@ -127,6 +127,33 @@ def get_adx_plot(params):
     plt.show()
     return timedata,opt_ast_lens,data
 
+def get_plots_temp(fname,flag_savefig=False,xlim=5001,loggs=None,
+    xsname='prodList',xlab='Number of Items',savefname_common='./output/undefined'):
+
+    #Load data
+    loggs = pickle.load(open(fname,'rb'))
+
+    ###plot1
+    params = {'fname':savefname_common+'_time.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
+        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Time (s)',
+        'logname':'time','xsname':xsname,'ylims':None,'flag_rmadxopt':True}
+    get_plot_subroutine(params)
+
+
+    ###plot2
+    params = {'fname':savefname_common+'_revPctErr.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
+        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Pct. Err. in Revenue',
+        'logname':'revPctErr','xsname':xsname,'ylims':[-.02,0.3],'flag_rmadxopt':False}
+    get_plot_subroutine(params)
+
+
+    ###plot3
+    params = {'fname':savefname_common+'_setOlp.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
+        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Pct. Set Overlap',
+        'logname':'setOlp','xsname':xsname,'ylims':[0,1.1],'flag_rmadxopt':False}
+    get_plot_subroutine(params)
+
+    return 0,0,0
 
 
 def get_plots(fname,flag_savefig=False,xlim=5001,loggs=None,
@@ -334,12 +361,12 @@ if __name__ == '__main__':
 
     ##3. DONE capacity constrained: 
     # # #bpp
-    # xlim,fname = 20001,'./output/results20170528_final_vs_prod/cap_loggs_bppData_prod_20000_20170529_0459AM.pkl'
-    # timedata,opt_ast_lens,data = get_plots(fname=fname,flag_savefig=True,xlim=xlim,
-    #     savefname_common='./output/figures/cap_real_price_prod')
+    xlim,fname = 20001,'./output/results20170528_final_vs_prod/cap_loggs_bppData_prod_20000_20170529_0459AM.pkl'
+    timedata,opt_ast_lens,data = get_plots_temp(fname=fname,flag_savefig=True,xlim=xlim,
+        savefname_common='./output/figures/new/cap_real_price_prod')
 
-    xlim,fname = 1001,'./output/results20170528_final_staticmnl/cap_loggs_bppData_prod_1000_20170529_0633AM.pkl'
-    get_static_mnl_plot(fname=fname,flag_savefig=True,xlim=xlim,savefname='./output/figures/cap_real_price_prod_staticmnl.png')
+    # xlim,fname = 1001,'./output/results20170528_final_staticmnl/cap_loggs_bppData_prod_1000_20170529_0633AM.pkl'
+    # get_static_mnl_plot(fname=fname,flag_savefig=True,xlim=xlim,savefname='./output/figures/cap_real_price_prod_staticmnl.png')
 
     # #synthetic
     # xlim,fname = 20001,'./output/results20170528_final_vs_prod/cap_loggs_synthetic_prod_20000_20170529_1214AM.pkl'
