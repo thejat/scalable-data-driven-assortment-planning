@@ -127,6 +127,8 @@ def get_adx_plot(params):
     plt.show()
     return timedata,opt_ast_lens,data
 
+#################################################################
+
 def get_plots_temp(fname,flag_savefig=False,xlim=5001,loggs=None,
     xsname='prodList',xlab='Number of Items',savefname_common='./output/undefined'):
 
@@ -137,24 +139,63 @@ def get_plots_temp(fname,flag_savefig=False,xlim=5001,loggs=None,
     params = {'fname':savefname_common+'_time.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
         'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Time (s)',
         'logname':'time','xsname':xsname,'ylims':None,'flag_rmadxopt':True}
-    get_plot_subroutine(params)
+    get_plot_subroutine_temp(params)
 
 
     ###plot2
     params = {'fname':savefname_common+'_revPctErr.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
         'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Pct. Err. in Revenue',
-        'logname':'revPctErr','xsname':xsname,'ylims':[-.02,0.3],'flag_rmadxopt':False}
-    get_plot_subroutine(params)
+        'logname':'revPctErr','xsname':xsname,'ylims':[-.02,0.6],'flag_rmadxopt':False}
+    get_plot_subroutine_temp(params)
 
 
     ###plot3
     params = {'fname':savefname_common+'_setOlp.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
         'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Pct. Set Overlap',
         'logname':'setOlp','xsname':xsname,'ylims':[0,1.1],'flag_rmadxopt':False}
-    get_plot_subroutine(params)
+    get_plot_subroutine_temp(params)
 
     return 0,0,0
 
+def get_plot_subroutine_temp(params):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    xs = params['loggs']['additional'][params['xsname']]
+    algonames_new = {'Assort-LSH':'Assort-MNL(approx)','Assort-Exact':'Assort-MNL','Adxopt':'Adxopt','LP':'LP'} # params['loggs']['additional']['algonames']
+    # print algonames_new
+
+    for e,algo in enumerate(params['loggs']['additional']['algonames']):
+        if params['flag_rmadxopt']==True and algo=='Adxopt':
+            continue
+        else:
+            if params['flag_bars']==True:
+                ys_lb  = np.asarray([np.percentile(params['loggs'][algo][params['logname']][i,:],25) for i in range(len(xs))])
+                ys_ub  = np.asarray([np.percentile(params['loggs'][algo][params['logname']][i,:],75) for i in range(len(xs))])
+                ax.fill_between(xs, ys_lb, ys_ub, alpha=0.5, edgecolor='#CC4F1B', facecolor='#FF9848')
+            # ys = np.asarray([np.percentile(params['loggs'][algo][params['logname']][i,:],50) for i in range(len(xs))])
+            ys = np.asarray([np.mean(params['loggs'][algo][params['logname']][i,:]) for i in range(len(xs))])
+            if algo=='Adxopt':
+                ax.plot(xs, ys,label=algonames_new[algo],marker='>',markersize=10)
+            elif algo=='LP' and params['logname'] != 'time':
+                ax.plot(xs, ys,label=algonames_new[algo],marker='<',markersize=10)
+            else:
+                ax.plot(xs, ys,label=algonames_new[algo])
+        # print algo, algonames_new[e],ys
+
+
+    ax.legend(loc='best', bbox_to_anchor=(0.5, 1.05), ncol=3)
+    plt.ylabel(params['ylab'])
+    plt.xlabel(params['xlab'])
+    plt.legend(loc='best')
+    plt.xlim(params['xlims'])
+    if params['ylims'] is not None:
+        plt.ylim(params['ylims'])
+
+    if params['flag_savefig'] == True:
+        plt.savefig(params['fname'])  
+    plt.show()
+
+#############################################
 
 def get_plots(fname,flag_savefig=False,xlim=5001,loggs=None,
     xsname='prodList',xlab='Number of Items',savefname_common='./output/undefined'):
