@@ -253,7 +253,7 @@ from cplex.exceptions import CplexError
 
 def capAst_LP(prod, C, p, v, meta = None):
 
-    st = time.time()    
+    # st = time.time()    
 
     try:
         my_prob = cplex.Cplex()
@@ -304,6 +304,7 @@ def capAst_LP(prod, C, p, v, meta = None):
         my_prob.set_error_stream(None)
         my_prob.set_warning_stream(None)
         my_prob.set_results_stream(None)
+        st = time.time() 
         my_prob.solve()
 
     except CplexError, exc:
@@ -329,7 +330,9 @@ def capAst_LP(prod, C, p, v, meta = None):
         if x[i]*v[0]/max(v[i],1e-7)/max(x[0],1e-7) > 1e-3:
             maxRevSet.append(int(i))
 
-    print "\t\tProducts in the LP cplex optimal assortment are", maxRevSet
+    print "\t\tLP Opt Set Size:",len(maxRevSet)
+    print "\t\tLP Opt Rev:",maxRev
+    print "\t\tLP Opt Set:", maxRevSet
 
     return maxRev,set(maxRevSet),timeTaken
 

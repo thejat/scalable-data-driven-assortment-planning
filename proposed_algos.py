@@ -124,7 +124,7 @@ def get_nn_set(v,p,K, prod, C, db, normConst,algo,feasibles=None,queryTimeLog=0)
 
 # Wrappers
 # Assort-Exact-special
-def capAst_AssortExact(prod,C,p,v,meta):
+def capAst_AssortExactOLD(prod,C,p,v,meta):
   maxRev, maxSet, timeTaken, queryTimeLog = assortX(prod, C, p, v, 
     meta['eps'],  
     algo = 'special_case_exact',
@@ -164,4 +164,48 @@ def genAst_AssortLSH(prod,C,p,v,meta):
     feasibles=meta['feasibles'])
   print "\t\tAssortLSH-G set:",maxSet
   print "\t\tAssortLSH-G cumulative querytime:",queryTimeLog
+  return maxRev, maxSet, timeTaken
+
+
+# Assort-Exact-Linear-Scan
+def capAst_AssortExact(prod,C,p,v,meta):
+
+  def createArray(pminusk,v):
+    return np.multiply(pminusk,v)
+
+  def linearSearch(p,k,v,C,prod):
+    start = time.time()
+    maxPseudoRev = 0
+    maxSet = []
+    bigArray = createArray(p-K,v) 
+    candidate_product_idxes = np.argsort(bigArray)[prod+1-C:]
+    maxSet = sorted(candidate_product_idxes[bigArray[candidate_product_idxes] > 0])
+    maxPseudoRev = sum(bigArray[maxSet])
+    return maxPseudoRev,maxSet,time.time()-start
+
+
+  st  = time.time()
+  L   = 0 #L is the lower bound of the search space
+  U   = max(p) #Scalar here
+
+  count = 0
+  while (U - L) >  meta['eps']:
+    K = (U+L)/2  
+    maxPseudoRev, maxSet,queryTimeLog = linearSearch(p,K,v,C,prod)
+    print "\t\t\tAssortExact querytime:",queryTimeLog, " for K=",K
+
+    if (maxPseudoRev/v[0]) >= K:
+      L = K
+      # print "going left at count ",count
+    else:
+      U = K
+      # print "going right at count",count
+    count +=1
+               
+  maxRev =  calcRev(maxSet, p, v,prod)
+  timeTaken = time.time() - st
+
+  print "\t\tAssortExact Opt Set Size:",len(maxSet)
+  print "\t\tAssortExact Opt Set:",maxSet
+  print "\t\tAssortExact Opt Rev:",maxRev
   return maxRev, maxSet, timeTaken

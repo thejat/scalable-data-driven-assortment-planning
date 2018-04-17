@@ -32,7 +32,7 @@ def generate_instance(price_range,prod,genMethod,iterNum):
   p = np.insert(p,0,0) #inserting 0 as the first element to denote the price of the no purchase option
   
   #generating the customer preference vector, we don't care that it is in 0,1. Want it away from 0 for numeric. stability.
-  v = np.around(np.random.rand(prod+1) + 1e-3, decimals =7) #v is a prod+1 length vector as the first element signifies the customer preference for the no purchase option
+  v = np.around(np.random.beta(1,5,prod+1) + 1e-3, decimals =7) #v is a prod+1 length vector as the first element signifies the customer preference for the no purchase option
   #Ensure that there are no duplicate entires in v - required for Static-MNL.
   u, indices = np.unique(v, return_inverse=True)   
 
@@ -45,6 +45,7 @@ def generate_instance(price_range,prod,genMethod,iterNum):
       v= np.concatenate((u,newEnt))
       u, indices = np.unique(v, return_inverse=True)
 
+  print "instance max price:",max(p)
   return p,np.around(v,decimals=7)
 
 def get_log_dict(prodList,N,algos,price_range,eps,C=None):
@@ -141,14 +142,14 @@ def run_prod_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synt
   np.random.seed(1000)
   price_range = 1000      #denotes highest possible price of a product
   eps         = 0.1       #tolerance
-  N           = 30 #   #number of times Monte Carlo simulation will run
+  N           = 5 #   #number of times Monte Carlo simulation will run
   if flag_capacitated == True:
     C           = 50        #capacity of assortment
     if genMethod=='synthetic':
-      prodList    = [100, 250, 500, 1000, 2500, 5000,10000,15000,20000] #[100,200,300] #
+      prodList    = [15000,20000] #[100,200,300] #
     else:
       prodList    = [100, 250, 500, 1000, 3000, 5000, 7000,10000,20000]
-    algos = collections.OrderedDict({'Assort-Exact':capAst_AssortExact,'Assort-LSH':capAst_AssortLSH,'Adxopt':capAst_adxopt,'LP':capAst_LP})#,'Static-MNL':capAst_paat}
+    algos = collections.OrderedDict({'Assort-Exact':capAst_AssortExact,'LP':capAst_LP})#,'Static-MNL':capAst_paat}
     benchmark = 'LP'#'Static-MNL'#
     loggs = get_log_dict(prodList,N,algos,price_range,eps,C)
 
@@ -495,7 +496,7 @@ if __name__=='__main__':
   #3. Special case (cap constrained): bpp data and synthetic data
 
   # loggs1 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='synthetic')
-  # loggs2 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='bppData')
+  loggs2 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='bppData')
   ## loggs3 = run_prod_experiment(flag_capacitated = False,flag_savedata = True,genMethod='synthetic')
   ## loggs4 = run_prod_experiment(flag_capacitated = False,flag_savedata = True,genMethod='bppData')
 

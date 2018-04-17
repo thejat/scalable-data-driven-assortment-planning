@@ -73,7 +73,7 @@ def get_adx_plot(params):
 
     #adxopt data {'fname':savefname_common+'adxopt_time.png','flag_savefig':flag_savefig,'xlims':[0,xlim],'loggs':loggs}
     opt_ast_lens = np.zeros((len(params['loggs']['additional']['prodList']),params['loggs']['additional']['N']))
-    for i,_ in enumerate(params['loggs']['additional']['prodList']):
+    for i,_ in enumerate(params['loggs']['additional']['prodList'][:-2]):
         for j in range(params['loggs']['additional']['N']):
             opt_ast_lens[i,j] = len(params['loggs']['Adxopt']['maxSet'][(i,j)])
 
@@ -402,9 +402,9 @@ if __name__ == '__main__':
 
     ##3. DONE capacity constrained: 
     # # #bpp
-    xlim,fname = 20001,'./output/results20170528_final_vs_prod/cap_loggs_bppData_prod_20000_20170529_0459AM.pkl'
-    timedata,opt_ast_lens,data = get_plots_temp(fname=fname,flag_savefig=True,xlim=xlim,
-        savefname_common='./output/figures/new/cap_real_price_prod')
+    # xlim,fname = 20001,'./output/results20170528_final_vs_prod/cap_loggs_bppData_prod_20000_20170529_0459AM.pkl'
+    # timedata,opt_ast_lens,data = get_plots_temp(fname=fname,flag_savefig=True,xlim=xlim,
+    #     savefname_common='./output/figures/new/cap_real_price_prod')
 
     # xlim,fname = 1001,'./output/results20170528_final_staticmnl/cap_loggs_bppData_prod_1000_20170529_0633AM.pkl'
     # get_static_mnl_plot(fname=fname,flag_savefig=True,xlim=xlim,savefname='./output/figures/cap_real_price_prod_staticmnl.png')
@@ -414,4 +414,6 @@ if __name__ == '__main__':
     # timedata,opt_ast_lens,data = get_plots(fname=fname,flag_savefig=True,xlim=xlim,
     #     savefname_common='./output/figures/cap_synthetic_prod')
 
-
+    xlim,fname = 10001,'./output/cap_loggs_synthetic_prod_10000_20180416_0315PM.pkl'
+    timedata,opt_ast_lens,data = get_plots(fname=fname,flag_savefig=True,xlim=xlim,
+        savefname_common='./output/cap_synthetic_prod_linsacan')
