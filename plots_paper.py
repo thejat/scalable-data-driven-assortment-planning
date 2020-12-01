@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import seaborn as sns
 import pickle
+sns.set()
 
 
 plt.rcParams.update({'legend.fontsize': 'xx-large',
@@ -137,7 +138,7 @@ def get_plots_temp(fname,flag_savefig=False,xlim=5001,loggs=None,
 
     ###plot1
     params = {'fname':savefname_common+'_time.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
-        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Time (s)',
+        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Log of Time (s)',
         'logname':'time','xsname':xsname,'ylims':None,'flag_rmadxopt':True}
     get_plot_subroutine_temp(params)
 
@@ -145,7 +146,7 @@ def get_plots_temp(fname,flag_savefig=False,xlim=5001,loggs=None,
     ###plot2
     params = {'fname':savefname_common+'_revPctErr.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
         'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Pct. Err. in Revenue',
-        'logname':'revPctErr','xsname':xsname,'ylims':[-.02,0.6],'flag_rmadxopt':False}
+        'logname':'revPctErr','xsname':xsname,'ylims':[-0.02,0.06],'flag_rmadxopt':False}
     get_plot_subroutine_temp(params)
 
 
@@ -175,6 +176,7 @@ def get_plot_subroutine_temp(params):
             # ys = np.asarray([np.percentile(params['loggs'][algo][params['logname']][i,:],50) for i in range(len(xs))])
             ys = np.asarray([np.mean(params['loggs'][algo][params['logname']][i,:]) for i in range(len(xs))])
             if algo=='Adxopt':
+                #ax.set_yscale('log')
                 ax.plot(xs, ys,label=algonames_new[algo],marker='>',markersize=10)
             elif algo=='LP' and params['logname'] != 'time':
                 ax.plot(xs, ys,label=algonames_new[algo],marker='<',markersize=10)
@@ -182,11 +184,11 @@ def get_plot_subroutine_temp(params):
                 ax.plot(xs, ys,label=algonames_new[algo])
         # print algo, algonames_new[e],ys
 
-
+    plt.rcParams["figure.figsize"] = (8,6)
     ax.legend(loc='best', bbox_to_anchor=(0.5, 1.05), ncol=3)
     plt.ylabel(params['ylab'])
     plt.xlabel(params['xlab'])
-    plt.legend(loc='best')
+    plt.legend(loc='best', facecolor= 'inherit', framealpha=0.0, frameon=None)
     plt.xlim(params['xlims'])
     if params['ylims'] is not None:
         plt.ylim(params['ylims'])
@@ -414,6 +416,10 @@ if __name__ == '__main__':
     # timedata,opt_ast_lens,data = get_plots(fname=fname,flag_savefig=True,xlim=xlim,
     #     savefname_common='./output/figures/cap_synthetic_prod')
 
-    xlim,fname = 10001,'./output/cap_loggs_synthetic_prod_10000_20180416_0315PM.pkl'
-    timedata,opt_ast_lens,data = get_plots(fname=fname,flag_savefig=True,xlim=xlim,
-        savefname_common='./output/cap_synthetic_prod_linsacan')
+    # xlim,fname = 10001,'./output/cap_loggs_synthetic_prod_10000_20180416_0315PM.pkl'
+    # timedata,opt_ast_lens,data = get_plots(fname=fname,flag_savefig=True,xlim=xlim,
+    #    savefname_common='./output/cap_synthetic_prod_linsacan')
+    
+     xlim,fname = 20001,'./output/cap_20/cap_loggs_bppData_prod_20000_20201130_0429PM.pkl'
+     timedata,opt_ast_lens,data = get_plots_temp(fname=fname,flag_savefig=True,xlim=xlim,
+         savefname_common='./output/figures/new/cap_real_price_prod')

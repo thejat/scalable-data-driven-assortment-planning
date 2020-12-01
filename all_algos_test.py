@@ -144,12 +144,12 @@ def run_prod_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synt
   eps         = 0.1       #tolerance
   N           = 5 #   #number of times Monte Carlo simulation will run
   if flag_capacitated == True:
-    C           = 50        #capacity of assortment
+    C           = 20       #capacity of assortment in [10,20,50,100,200]
     if genMethod=='synthetic':
       prodList    = [15000,20000] #[100,200,300] #
     else:
       prodList    = [100, 250, 500, 1000, 3000, 5000, 7000,10000,20000]
-    algos = collections.OrderedDict({'Assort-Exact':capAst_AssortExact,'LP':capAst_LP})#,'Static-MNL':capAst_paat}
+    algos = collections.OrderedDict({'Assort-Exact':capAst_AssortExact,'LP':capAst_LP,'Adxopt':capAst_adxopt})#,'Static-MNL':capAst_paat}
     benchmark = 'LP'#'Static-MNL'#
     loggs = get_log_dict(prodList,N,algos,price_range,eps,C)
 
@@ -496,7 +496,7 @@ if __name__=='__main__':
   #3. Special case (cap constrained): bpp data and synthetic data
 
   # loggs1 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='synthetic')
-  loggs2 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='bppData')
+   loggs2 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='bppData')
   ## loggs3 = run_prod_experiment(flag_capacitated = False,flag_savedata = True,genMethod='synthetic')
   ## loggs4 = run_prod_experiment(flag_capacitated = False,flag_savedata = True,genMethod='bppData')
 
