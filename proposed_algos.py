@@ -332,6 +332,9 @@ def capAst_AssortBZ(prod, C, p, v, meta):
     #time_log['total_time_taken'] = timeTaken
     #solve_log['solve_time'] = solve_time
     #solve_log['setup_time'] = timeTaken - solve_time
+    print "\t\tAssortBZ Opt Set Size:",len(best_set)
+    print "\t\tAssortBZ Opt Set:",best_set
+    print "\t\tAssortBZ Opt Rev:",best_set_revenue
 
     return best_set_revenue, best_set, timeTaken 
 
@@ -446,5 +449,9 @@ def genAst_AssortBZ(prod, C, p, v, meta):
     #time_log['total_time_taken'] = timeTaken
     #solve_log['solve_time'] = solve_time
     #solve_log['setup_time'] = timeTaken - solve_time
+    
+    print "\t\tAssortBZ-Z Opt Set Size:",len(best_set)
+    print "\t\tAssortBZ-Z Opt Set:",best_set
+    print "\t\tAssortBZ-Z Opt Rev:",best_set_revenue
 
     return best_set_revenue, best_set, timeTaken 
