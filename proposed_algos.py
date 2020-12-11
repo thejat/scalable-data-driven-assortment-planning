@@ -344,15 +344,13 @@ def genAst_AssortBZ(prod, C, p, v, meta):
     queryTimeLog = 0
     count = 0
     
-    if meta.get('eps', None) is None:
-        meta['eps'] = 1e-3
+    #if meta.get('eps', None) is None:
+    meta['eps'] = 1e-3
 
     U = max(p)  # U is the upper bound on the objective
     best_set_revenue = -1
     best_set = []
     
-    print('saketh1')
-    print(v[0])
     # Inititate NBS parameters and define helper functions
     #compstep_prob = meta['default_correct_compstep_probability']
     compstep_prob = 0.6
