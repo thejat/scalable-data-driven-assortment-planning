@@ -332,10 +332,6 @@ def capAst_AssortBZ(prod, C, p, v, meta):
     #time_log['total_time_taken'] = timeTaken
     #solve_log['solve_time'] = solve_time
     #solve_log['setup_time'] = timeTaken - solve_time
-    print "\t\tAssortBZ Opt Set Size:",len(best_set)
-    print "\t\tAssortBZ Opt Set:",best_set
-    print "\t\tAssortBZ Opt Rev:",best_set_revenue
-    
 
     return best_set_revenue, best_set, timeTaken 
 
@@ -348,15 +344,13 @@ def genAst_AssortBZ(prod, C, p, v, meta):
     queryTimeLog = 0
     count = 0
     
-    if meta.get('eps', None) is None:
-        meta['eps'] = 1e-3
+    #if meta.get('eps', None) is None:
+    meta['eps'] = 1e-3
 
     U = max(p)  # U is the upper bound on the objective
     best_set_revenue = -1
     best_set = []
     
-    print('saketh1')
-    print(v[0])
     # Inititate NBS parameters and define helper functions
     #compstep_prob = meta['default_correct_compstep_probability']
     compstep_prob = 0.6
@@ -452,9 +446,5 @@ def genAst_AssortBZ(prod, C, p, v, meta):
     #time_log['total_time_taken'] = timeTaken
     #solve_log['solve_time'] = solve_time
     #solve_log['setup_time'] = timeTaken - solve_time
-    
-    print "\t\tAssortBZ-Z Opt Set Size:",len(best_set)
-    print "\t\tAssortBZ-Z Opt Set:",best_set
-    print "\t\tAssortBZ-Z Opt Rev:",best_set_revenue
 
     return best_set_revenue, best_set, timeTaken 
