@@ -3,7 +3,7 @@ import time, pickle, datetime, random, os, copy, collections
 from real_data import get_feasibles_realdata
 
 from competing_algos import capAst_static_mnl, capAst_LP, capAst_adxopt, genAst_oracle
-from proposed_algos_v1 import capAst_AssortExact, capAst_AssortLSH, genAst_AssortLSH, genAst_AssortExact, preprocess, capAst_AssortBZ, genAst_AssortBZ
+from proposed_algos import capAst_AssortExact, capAst_AssortLSH, genAst_AssortLSH, genAst_AssortExact, preprocess, capAst_AssortBZ, genAst_AssortBZ
 
 def get_real_prices(price_range, prod, iterNum = 0):
   fname = os.getcwd() + '/billion_price_data/processed_data/usa_2/numProducts_stats.npz'
