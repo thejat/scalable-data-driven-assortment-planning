@@ -4,6 +4,7 @@ from sklearn.neighbors import NearestNeighbors
 from competing_algos import calcRev
 import numpy as np
 import time, math
+import random
 
 
 
@@ -16,6 +17,12 @@ def preprocess(prod, C, p, algo, nEst=10,nCand=40,feasibles = None):
     elif algo=='general_case_LSH':
         print "\tLSH DB General init..."
         db =  LSHForest(n_estimators= nEst, n_candidates=nCand, n_neighbors=1)
+    elif algo=="Special_case_BZ":
+        print "\tBZ DB Special init..."
+        db = LSHForest(n_estimators= nEst, n_candidates=nCand, n_neighbors=C)
+    elif algo=='general_case_BZ':
+        print "\tLSH DB General init..."
+        db =  LSHForest(n_estimators= nEst, n_candidates=nCand, n_neighbors=1)
     elif algo=='special_case_exact':
         print "\tExact DB Special init..."
         db =  NearestNeighbors(n_neighbors=C, metric='cosine', algorithm='brute') 
@@ -23,7 +30,7 @@ def preprocess(prod, C, p, algo, nEst=10,nCand=40,feasibles = None):
         print "\tExact DB General init..."
         db =  NearestNeighbors(n_neighbors=1, metric='cosine', algorithm='brute')   
  
-    if ((algo == 'special_case_LSH') | (algo=='special_case_exact')):
+    if ((algo == 'special_case_LSH') | (algo=='special_case_exact') | (algo=='special_case_BZ')):
         U = np.eye(prod)
         normConst = np.sqrt(2+np.max(p)**2)
         ptsTemp = np.concatenate((U*np.array(p[1:]),U), axis=1)*1.0/normConst
@@ -42,6 +49,7 @@ def preprocess(prod, C, p, algo, nEst=10,nCand=40,feasibles = None):
     
     # for e,fe in enumerate(feasibles):
     #   print e,np.linalg.norm(p[1:]*feasibles[e]/normConst),np.linalg.norm(pts[e])
+    # NearestNeighbors(n_estimators= nEst, n_candidates=nCand, n_neighbors=C)
 
 
     db.fit(pts) 
@@ -94,7 +102,7 @@ def get_nn_set(v,p,K, prod, C, db, normConst,algo,feasibles=None,queryTimeLog=0)
     # print 1-distList[0]
     # print "approx neigh", approx_neighbors
 
-    if ((algo == 'special_case_LSH') | (algo=='special_case_exact')):
+    if ((algo == 'special_case_LSH') | (algo=='special_case_exact') | (algo=='special_case_BZ')):
         real_neighbours = (distList<1) #consider points only whose dot product with v is strictly positive    
         real_dist = np.linalg.norm(query)*(1-distList)[0] 
         real_dist = real_dist * normConst
@@ -209,3 +217,236 @@ def capAst_AssortExact(prod,C,p,v,meta):
   print "\t\tAssortExact Opt Set:",maxSet
   print "\t\tAssortExact Opt Rev:",maxRev
   return maxRev, maxSet, timeTaken
+
+
+#Assort-BZ
+def capAst_AssortBZ(prod, C, p, v, meta):
+    
+    L = 0  # L is the lower bound on the objectiv
+
+    st = time.time()
+    queryTimeLog = 0
+    count = 0
+    
+    
+    if meta.get('eps', None) is None:
+        meta['eps'] = 1e-3
+
+    U = max(p)  # U is the upper bound on the objective
+    best_set_revenue = -1
+    best_set = []
+    L = meta['eps']
+    
+    # Inititate NBS parameters and define helper functions
+    #compstep_prob = meta['default_correct_compstep_probability']
+    compstep_prob = 0.6
+    if 'correct_compstep_probability' in meta.keys():
+        if meta['correct_compstep_probability'] >= 0.5:
+            compstep_prob = meta['correct_compstep_probability']
+
+    # Get parameters from config, and create ranges and distribution default
+    '''
+    step_width = meta['step_width']
+    max_iters = meta['max_nbs_iterations']
+    early_termination_width = meta['early_termination_width']
+    belief_fraction = meta['belief_fraction']  
+    '''
+    
+    step_width = 1e-1
+    max_iters = 1000
+    early_termination_width = 1
+    belief_fraction = 0.95
+
+
+    # Initialize Uniform Distribution
+    range_idx = np.arange(L, U, step_width)
+    range_dist = np.ones_like(range_idx)
+    range_dist = range_dist / np.sum(range_dist)
+
+    range_dist = np.log(range_dist)
+
+    def get_pivot(range_dist):
+        exp_dist = np.exp(range_dist)
+        alpha = exp_dist.sum() * 0.5
+
+        # Finding the median of the distribution requires
+        # adding together many very small numbers, so it's not
+        # very stable. In part, we address this by randomly
+        # approaching the median from below or above.
+        if random.choice([True, False]):
+            try:
+                return range_idx[exp_dist.cumsum() < alpha][-1]
+            except:
+                return range_idx[::-1][exp_dist[::-1].cumsum() < alpha][-1]
+        else:
+            return range_idx[::-1][exp_dist[::-1].cumsum() < alpha][-1]
+
+    def get_belief_interval(range_dist, fraction=belief_fraction):
+        exp_dist = np.exp(range_dist)
+
+        epsilon = 0.5 * (1 - fraction)
+        epsilon = exp_dist.sum() * epsilon
+        if (exp_dist[0] < epsilon):
+            left = range_idx[exp_dist.cumsum() < epsilon][-1]
+        else:
+            left = 0
+        right = range_idx[exp_dist.cumsum() > (exp_dist.sum() - epsilon)][0]
+        return left, right
+
+    for i in range(max_iters):
+        #logger.info(f"\niteration: {iter_count}")
+        count += 1
+        # get Median of Distribution
+        median = get_pivot(range_dist)
+        # comparision function
+        maxPseudoRev, maxSet, queryTimeLog = get_nn_set(v, p, median, prod, C, db = meta['db_BZ'], normConst = meta['normConst'], algo = 'special_case_BZ', feasibles = None, queryTimeLog = 0)
+        # Compare Set Revenue with bestSet provided, and replace bestSet if more optimal
+        #current_set_revenue = rcm_calc_revenue(maxSet, p, rcm, num_prods)
+        current_set_revenue = calcRev(maxSet, p, v, prod)
+        if current_set_revenue > best_set_revenue:
+            best_set, best_set_revenue = maxSet, current_set_revenue
+
+        if (maxPseudoRev / v[0]) >= median:
+            range_dist[range_idx >= median] += np.log(compstep_prob)
+            range_dist[range_idx < median] += np.log(1 - compstep_prob)
+        else:
+            range_dist[range_idx <= median] += np.log(compstep_prob)
+            range_dist[range_idx > median] += np.log(1 - compstep_prob)
+
+        # shift all density from lower than best revenue got into upper end
+        shift_density_total = np.sum(np.exp(range_dist[range_idx < best_set_revenue]))
+        if (shift_density_total > 0):
+            range_dist[range_idx < best_set_revenue] = np.log(0)
+            range_dist[range_idx >= best_set_revenue] += np.log(
+                    shift_density_total / len(range_dist[range_idx >= best_set_revenue]))
+        # avoid overflows
+        range_dist -= np.max(range_dist)
+        belief_start, belief_end = get_belief_interval(range_dist)
+ 
+        if (belief_end - belief_start) <= early_termination_width:
+            break
+
+    #logger.info(f" Noisy Binary Search Loop Done in %d iterations.." % iter_count)
+    timeTaken = time.time()-st
+    #timeTaken = time.time() - st
+    #time_log['total_time_taken'] = timeTaken
+    #solve_log['solve_time'] = solve_time
+    #solve_log['setup_time'] = timeTaken - solve_time
+
+    return best_set_revenue, best_set, timeTaken 
+
+
+def genAst_AssortBZ(prod, C, p, v, meta):
+    
+    L = 0  # L is the lower bound on the objectiv
+
+    st = time.time()
+    queryTimeLog = 0
+    count = 0
+    
+    if meta.get('eps', None) is None:
+        meta['eps'] = 1e-3
+
+    U = max(p)  # U is the upper bound on the objective
+    best_set_revenue = -1
+    best_set = []
+    
+    print('saketh1')
+    print(v[0])
+    # Inititate NBS parameters and define helper functions
+    #compstep_prob = meta['default_correct_compstep_probability']
+    compstep_prob = 0.6
+    if 'correct_compstep_probability' in meta.keys():
+        if meta['correct_compstep_probability'] >= 0.7:
+            compstep_prob = meta['correct_compstep_probability']
+
+    # Get parameters from config, and create ranges and distribution default
+    '''
+    step_width = meta['step_width']
+    max_iters = meta['max_nbs_iterations']
+    early_termination_width = meta['early_termination_width']
+    belief_fraction = meta['belief_fraction']  
+    '''
+    
+    step_width = 1e-1
+    max_iters = 1000
+    early_termination_width = 1
+    belief_fraction = 0.95
+
+
+    # Initialize Uniform Distribution
+    range_idx = np.arange(L, U, step_width)
+    range_dist = np.ones_like(range_idx)
+    range_dist = range_dist / np.sum(range_dist)
+
+    range_dist = np.log(range_dist)
+
+    def get_pivot(range_dist):
+        exp_dist = np.exp(range_dist)
+        alpha = exp_dist.sum() * 0.5
+
+        # Finding the median of the distribution requires
+        # adding together many very small numbers, so it's not
+        # very stable. In part, we address this by randomly
+        # approaching the median from below or above.
+        if random.choice([True, False]):
+            try:
+                return range_idx[exp_dist.cumsum() < alpha][-1]
+            except:
+                return range_idx[::-1][exp_dist[::-1].cumsum() < alpha][-1]
+        else:
+            return range_idx[::-1][exp_dist[::-1].cumsum() < alpha][-1]
+
+    def get_belief_interval(range_dist, fraction=belief_fraction):
+        exp_dist = np.exp(range_dist)
+
+        epsilon = 0.5 * (1 - fraction)
+        epsilon = exp_dist.sum() * epsilon
+        if (exp_dist[0] < epsilon):
+            left = range_idx[exp_dist.cumsum() < epsilon][-1]
+        else:
+            left = 0
+        right = range_idx[exp_dist.cumsum() > (exp_dist.sum() - epsilon)][0]
+        return left, right
+
+    for i in range(max_iters):
+        #logger.info(f"\niteration: {iter_count}")
+        count += 1
+        # get Median of Distribution
+        median = get_pivot(range_dist)
+        # comparision function
+        maxPseudoRev, maxSet, queryTimeLog = get_nn_set(v, p, median, prod, C, db = meta['db_BZ'], normConst = meta['normConst'], algo = 'general_case_BZ', feasibles = meta['feasibles'], queryTimeLog = 0)
+        # Compare Set Revenue with bestSet provided, and replace bestSet if more optimal
+        #current_set_revenue = rcm_calc_revenue(maxSet, p, rcm, num_prods)
+        current_set_revenue = calcRev(maxSet, p, v, prod)
+        if current_set_revenue > best_set_revenue:
+            best_set, best_set_revenue = maxSet, current_set_revenue
+  
+        if (maxPseudoRev / v[0]) >= median:
+            range_dist[range_idx >= median] += np.log(compstep_prob)
+            range_dist[range_idx < median] += np.log(1 - compstep_prob)
+        else:
+            range_dist[range_idx <= median] += np.log(compstep_prob)
+            range_dist[range_idx > median] += np.log(1 - compstep_prob)
+
+        # shift all density from lower than best revenue got into upper end
+        shift_density_total = np.sum(np.exp(range_dist[range_idx < best_set_revenue]))
+        if (shift_density_total > 0):
+            range_dist[range_idx < best_set_revenue] = np.log(0)
+            range_dist[range_idx >= best_set_revenue] += np.log(
+                    shift_density_total / len(range_dist[range_idx >= best_set_revenue]))
+        # avoid overflows
+        range_dist -= np.max(range_dist)
+        belief_start, belief_end = get_belief_interval(range_dist)
+ 
+        if (belief_end - belief_start) <= early_termination_width:
+            break
+
+    #logger.info(f" Noisy Binary Search Loop Done in %d iterations.." % iter_count)
+    timeTaken = time.time()-st
+    #timeTaken = time.time() - st
+    #time_log['total_time_taken'] = timeTaken
+    #solve_log['solve_time'] = solve_time
+    #solve_log['setup_time'] = timeTaken - solve_time
+
+    return best_set_revenue, best_set, timeTaken 
