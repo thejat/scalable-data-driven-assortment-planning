@@ -142,22 +142,20 @@ def run_prod_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synt
   np.random.seed(1000)
   price_range = 1000      #denotes highest possible price of a product
   eps         = 0.1       #tolerance
-  N           = 50 #   #number of times Monte Carlo simulation will run
+  N           = 1 #   #number of times Monte Carlo simulation will run
   if flag_capacitated == True:
     C           = 20       #capacity of assortment in [10,20,50,100,200]
     if genMethod=='synthetic':
       prodList    = [15000,20000] #[100,200,300] #
     else:
       prodList    = [100, 250, 500, 1000, 3000, 5000, 7000,10000,20000]
-    algos = collections.OrderedDict({'Assort-Exact':capAst_AssortExact,'LP':capAst_LP,'Adxopt':capAst_adxopt})#,'Static-MNL':capAst_paat}
+    algos = collections.OrderedDict({'Assort-Exact':capAst_AssortExact,'LP':capAst_LP,'Adxopt':capAst_adxopt, 'Assort-BZ':capAst_AssortBZ})#,'Static-MNL':capAst_paat}
     benchmark = 'LP'#'Static-MNL'#
     loggs = get_log_dict(prodList,N,algos,price_range,eps,C)
 
   else:
     prodList    = [100,200,400,800,1600]
-    algos       = collections.Ordered
-    
-    ({'Linear-Search':genAst_oracle,'Assort-Exact-G':genAst_AssortExact,'Assort-LSH-G':genAst_AssortLSH})
+    algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-Exact-G':genAst_AssortExact,'Assort-LSH-G':genAst_AssortLSH, 'Assort-BZ-G':genAst_AssortBZ })
     benchmark   = 'Linear-Search'
     loggs = get_log_dict(prodList,N,algos,price_range,eps)
     loggs['additional']['lenFeasibles'] = np.zeros(len(prodList))
@@ -275,8 +273,8 @@ def run_lenFeas_experiment(flag_savedata=True,genMethod='synthetic',nEst=20,nCan
         meta['db_exact'],_,meta['normConst'] = preprocess(prod, C, p, 'general_case_exact',feasibles=feasibles)
       if 'Assort-LSH-G' in algos:
         meta['db_LSH'],_,meta['normConst'] = preprocess(prod, C, p, 'general_case_LSH', nEst=nEst,nCand=nCand,feasibles=feasibles)#Hardcoded values
-      if 'Assort-BZ-G' in algos:
-        meta['db_BZ'],_,meta['normConst'] = preprocess(prod, C, p, 'general_case_BZ', nEst=nEst,nCand=nCand,feasibles=feasibles)  
+
+
 
       #run algos
       maxSetBenchmark = None
@@ -292,6 +290,8 @@ def run_lenFeas_experiment(flag_savedata=True,genMethod='synthetic',nEst=20,nCan
 
       t = t+1    
       
+
+    
     print 'Experiments (',N,' sims) for number of feasibles ',lenFeas, ' is done.'  
     print 'Cumulative time taken is', time.time() - t0,'\n'   
     loggs = compute_summary_stats(algos,loggs,benchmark,i)
@@ -313,7 +313,7 @@ def run_real_ast_experiment(flag_savedata=True,nEst=20,nCand=80):
   #parameters required
   np.random.seed(1000)
   price_range = 1000      #denotes highest possible price of a product
-  eps         = 5       #tolerance
+  eps         = 1       #tolerance
   N           = 50 #   #number of times Monte Carlo simulation will run
   real_data_list = [
     {'fname':'freq_itemset_data/retail0p0001_240852_txns88162.csv','isCSV':True,'min_ast_length':3},
@@ -321,6 +321,7 @@ def run_real_ast_experiment(flag_savedata=True,nEst=20,nCand=80):
     {'fname':'freq_itemset_data/chains0p00001_txns1112949.txt','isCSV':False,'min_ast_length':5},
     {'fname':'freq_itemset_data/OnlineRetail0p000001_txns540455.txt','isCSV':False,'min_ast_length':3}]
   algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-LSH-G':genAst_AssortLSH,'Assort-Exact-G':genAst_AssortExact, 'Assort-BZ-G':genAst_AssortBZ})
+  #algos       = collections.OrderedDict({'Linear-Search':genAst_oracle, 'Assort-BZ-G':genAst_AssortBZ})
   benchmark   = 'Linear-Search'
   loggs = get_log_dict(real_data_list,N,algos,price_range,eps) #hack
   loggs['additional']['real_data_list'] = real_data_list
@@ -365,7 +366,6 @@ def run_real_ast_experiment(flag_savedata=True,nEst=20,nCand=80):
       loggs,badError = compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSetBenchmark,eps)
 
       t = t+1    
-      
 
     
     print 'Experiments (',N,' sims) for real ast data ',real_data['fname'], ' is done.'  
@@ -456,8 +456,6 @@ def run_prod_experiment_static_mnl(flag_capacitated=True,flag_savedata=True,genM
 
       t = t+1    
       
-
-    
     print 'Experiments (',N,' sims) for number of products ',prod, ' is done.'  
     print 'Cumulative time taken is', time.time() - t0,'\n'   
     loggs = compute_summary_stats(algos,loggs,benchmark,i)

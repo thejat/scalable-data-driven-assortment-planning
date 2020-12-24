@@ -5,6 +5,7 @@ from competing_algos import calcRev
 import numpy as np
 import time, math
 import random
+import pickle
 
 
 
@@ -22,7 +23,8 @@ def preprocess(prod, C, p, algo, nEst=10,nCand=40,feasibles = None):
         db = LSHForest(n_estimators= nEst, n_candidates=nCand, n_neighbors=C)
     elif algo=='general_case_BZ':
         print "\tLSH DB General init..."
-        db =  LSHForest(n_estimators= nEst, n_candidates=nCand, n_neighbors=1)
+        db =  LSHForest(n_estimators= nEst, n_candidates=nCand, n_neighbors=1, min_hash_match=2)
+        #db =  NearestNeighbors(n_neighbors=1, metric='cosine', algorithm='brute')
     elif algo=='special_case_exact':
         print "\tExact DB Special init..."
         db =  NearestNeighbors(n_neighbors=C, metric='cosine', algorithm='brute') 
@@ -341,6 +343,8 @@ def capAst_AssortBZ(prod, C, p, v, meta):
 
 def genAst_AssortBZ(prod, C, p, v, meta):
     
+    #RANGE = []
+    
     L = 0  # L is the lower bound on the objectiv
 
     st = time.time()
@@ -356,9 +360,9 @@ def genAst_AssortBZ(prod, C, p, v, meta):
     
     # Inititate NBS parameters and define helper functions
     #compstep_prob = meta['default_correct_compstep_probability']
-    compstep_prob = 0.6
+    compstep_prob = 0.7
     if 'correct_compstep_probability' in meta.keys():
-        if meta['correct_compstep_probability'] >= 0.7:
+        if meta['correct_compstep_probability'] >= 0.5:
             compstep_prob = meta['correct_compstep_probability']
 
     # Get parameters from config, and create ranges and distribution default
@@ -418,7 +422,6 @@ def genAst_AssortBZ(prod, C, p, v, meta):
         # comparision function
         maxPseudoRev, maxSet, queryTimeLog = get_nn_set(v, p, median, prod, C, db = meta['db_BZ'], normConst = meta['normConst'], algo = 'general_case_BZ', feasibles = meta['feasibles'], queryTimeLog = 0)
         # Compare Set Revenue with bestSet provided, and replace bestSet if more optimal
-        #current_set_revenue = rcm_calc_revenue(maxSet, p, rcm, num_prods)
         current_set_revenue = calcRev(maxSet, p, v, prod)
         if current_set_revenue > best_set_revenue:
             best_set, best_set_revenue = maxSet, current_set_revenue
@@ -438,6 +441,11 @@ def genAst_AssortBZ(prod, C, p, v, meta):
                     shift_density_total / len(range_dist[range_idx >= best_set_revenue]))
         # avoid overflows
         range_dist -= np.max(range_dist)
+        
+        #RANGE.append(range_dist)
+        
+        #BELIEF_INTERVAL.append(get_belief_interval(range_dist))
+ 
         belief_start, belief_end = get_belief_interval(range_dist)
  
         if (belief_end - belief_start) <= early_termination_width:
@@ -449,9 +457,12 @@ def genAst_AssortBZ(prod, C, p, v, meta):
     #time_log['total_time_taken'] = timeTaken
     #solve_log['solve_time'] = solve_time
     #solve_log['setup_time'] = timeTaken - solve_time
+    #filehandler = open("range"+str(count)+"time"+str(timeTaken)+".pkl","wb")
+    #pickle.dump(RANGE,filehandler)
+    #filehandler.close()
     
     print "\t\tAssortBZ-Z Opt Set Size:",len(best_set)
     print "\t\tAssortBZ-Z Opt Set:",best_set
     print "\t\tAssortBZ-Z Opt Rev:",best_set_revenue
 
-    return best_set_revenue, best_set, timeTaken 
+    return best_set_revenue, best_set, timeTaken
