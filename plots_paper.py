@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import seaborn as sns
 import pickle
+sns.set()
 
 
 plt.rcParams.update({'legend.fontsize': 'xx-large',
@@ -137,7 +138,7 @@ def get_plots_temp(fname,flag_savefig=False,xlim=5001,loggs=None,
 
     ###plot1
     params = {'fname':savefname_common+'_time.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
-        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Time (s)',
+        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Log of Time (s)',
         'logname':'time','xsname':xsname,'ylims':None,'flag_rmadxopt':True}
     get_plot_subroutine_temp(params)
 
@@ -145,7 +146,7 @@ def get_plots_temp(fname,flag_savefig=False,xlim=5001,loggs=None,
     ###plot2
     params = {'fname':savefname_common+'_revPctErr.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
         'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Pct. Err. in Revenue',
-        'logname':'revPctErr','xsname':xsname,'ylims':[-.02,0.6],'flag_rmadxopt':False}
+        'logname':'revPctErr','xsname':xsname,'ylims':[-0.02,0.06],'flag_rmadxopt':False}
     get_plot_subroutine_temp(params)
 
 
@@ -161,7 +162,7 @@ def get_plot_subroutine_temp(params):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     xs = params['loggs']['additional'][params['xsname']]
-    algonames_new = {'Assort-LSH':'Assort-MNL(approx)','Assort-Exact':'Assort-MNL','Adxopt':'Adxopt','LP':'LP'} # params['loggs']['additional']['algonames']
+    algonames_new = {'Assort-LSH':'Assort-MNL(approx)','Assort-Exact':'Assort-MNL','Adxopt':'Adxopt','LP':'LP', 'Assort-BZ':'Assort-MNL(BZ)'} # params['loggs']['additional']['algonames']
     # print algonames_new
 
     for e,algo in enumerate(params['loggs']['additional']['algonames']):
@@ -175,6 +176,7 @@ def get_plot_subroutine_temp(params):
             # ys = np.asarray([np.percentile(params['loggs'][algo][params['logname']][i,:],50) for i in range(len(xs))])
             ys = np.asarray([np.mean(params['loggs'][algo][params['logname']][i,:]) for i in range(len(xs))])
             if algo=='Adxopt':
+                #ax.set_yscale('log')
                 ax.plot(xs, ys,label=algonames_new[algo],marker='>',markersize=10)
             elif algo=='LP' and params['logname'] != 'time':
                 ax.plot(xs, ys,label=algonames_new[algo],marker='<',markersize=10)
@@ -182,11 +184,11 @@ def get_plot_subroutine_temp(params):
                 ax.plot(xs, ys,label=algonames_new[algo])
         # print algo, algonames_new[e],ys
 
-
+    plt.rcParams["figure.figsize"] = (8,6)
     ax.legend(loc='best', bbox_to_anchor=(0.5, 1.05), ncol=3)
     plt.ylabel(params['ylab'])
     plt.xlabel(params['xlab'])
-    plt.legend(loc='best')
+    plt.legend(loc='best', facecolor= 'inherit', framealpha=0.0, frameon=None)
     plt.xlim(params['xlims'])
     if params['ylims'] is not None:
         plt.ylim(params['ylims'])
@@ -194,6 +196,7 @@ def get_plot_subroutine_temp(params):
     if params['flag_savefig'] == True:
         plt.savefig(params['fname'])  
     plt.show()
+    
 
 #############################################
 
@@ -234,7 +237,7 @@ def get_plots(fname,flag_savefig=False,xlim=5001,loggs=None,
 def get_freqitem_subroutine(params):
 
     loggs = params['loggs']
-    loggs['additional']['algonames_new'] = ['Assort-MNL(approx)','Assort-MNL','Exhaustive']
+    loggs['additional']['algonames_new'] = ['Assort-MNL(approx)','Assort-MNL','Exhaustive','Assort-MNL(BZ)']
     ind = np.arange(len(loggs['additional']['real_data_list']))  # the x locations for the groups
     width = 0.25       # the width of the bars
     fig, ax = plt.subplots()
@@ -249,7 +252,7 @@ def get_freqitem_subroutine(params):
         ax.set_ylim(params['ylim'])
     ax.set_xticks(ind+1.4*width)
     ax.set_xticklabels( ('Retail', 'Foodmart', 'Chainstore', 'E-commerce') )
-    ax.legend( (rects[algoname][0] for algoname in loggs['additional']['algonames']), tuple(loggs['additional']['algonames_new']),loc='best')
+    ax.legend( (rects[algoname][0] for algoname in loggs['additional']['algonames']), tuple(loggs['additional']['algonames_new']),loc='best', framealpha=0.0, frameon=None)
 
     def autolabel(rects):
         # attach some text labels
@@ -302,17 +305,18 @@ def get_merged_plot_subroutine(params):
     for e,algo in enumerate(params['algonames']):
         ys = params[algo][params['logname']]
         ax.plot(xs, ys,label=algo)
-
+    plt.rcParams["figure.figsize"] = (8,6)    
     ax.legend(loc='best', bbox_to_anchor=(0.5, 1.05), ncol=3)
     plt.ylabel(params['ylab'][params['logname']])
     plt.xlabel(params['xlab'])
-    plt.legend(loc='best')
+    plt.legend(loc='best', facecolor= 'inherit', framealpha=0.0, frameon=None)
     plt.xlim(params['xlims'])
     if params['ylims'][params['logname']] is not None:
         plt.ylim(params['ylims'][params['logname']])
     if params['flag_savefig'] == True:
         plt.savefig(params['fname'])  
     plt.show()
+    
 
 def get_merged_plots(fname_prefix,fnames,flag_savefig,nest_ncand,xlim,dat):
 
@@ -384,6 +388,16 @@ if __name__ == '__main__':
     # 'gen_loggs_bppData_lenF_51200_nCand_200_nEst_100_20170526_0118PM.pkl']
     # nest_ncand = [(20,80),(40,160),(100,200)]
     # get_merged_plots(fname_prefix,fnames,flag_savefig=True,nest_ncand=nest_ncand,xlim=51201,dat='real')
+    
+    
+    # #bpp 
+     #fname_prefix = './output/results_final_vs_nassortments/'
+     #fnames = ['gen_loggs_bppData_lenF_51200_nCand_80_nEst_20_20201209_1002PM.pkl',
+     #'gen_loggs_bppData_lenF_51200_nCand_160_nEst_40_20201128_1059AM.pkl',
+     #'gen_loggs_bppData_lenF_51200_nCand_200_nEst_100_20201128_0236PM.pkl']
+     #nest_ncand = [(20,80),(40,160),(100,200)]
+     #get_merged_plots(fname_prefix,fnames,flag_savefig=True,nest_ncand=nest_ncand,xlim=51201,dat='real')
+    
 
     # #synthetic
     # fname_prefix = './output/results20170526_final_vs_nassortments/'
@@ -396,7 +410,7 @@ if __name__ == '__main__':
 
     ##2. DONE general: freq_item_dataset
     # get_freqitem_plots('./output/results20170527_final_freq_sets/gen_loggs_real_ast_upto3_nCand_160_nEst_40_20170528_0154AM.pkl',flag_savefig=True)
-
+     get_freqitem_plots('./output/gen_loggs_real_ast_upto3_nCand_160_nEst_40_20201210_1146PM.pkl',flag_savefig=True)
 
 
 
@@ -414,6 +428,10 @@ if __name__ == '__main__':
     # timedata,opt_ast_lens,data = get_plots(fname=fname,flag_savefig=True,xlim=xlim,
     #     savefname_common='./output/figures/cap_synthetic_prod')
 
-    xlim,fname = 10001,'./output/cap_loggs_synthetic_prod_10000_20180416_0315PM.pkl'
-    timedata,opt_ast_lens,data = get_plots(fname=fname,flag_savefig=True,xlim=xlim,
-        savefname_common='./output/cap_synthetic_prod_linsacan')
+    # xlim,fname = 10001,'./output/cap_loggs_synthetic_prod_10000_20180416_0315PM.pkl'
+    # timedata,opt_ast_lens,data = get_plots(fname=fname,flag_savefig=True,xlim=xlim,
+    #    savefname_common='./output/cap_synthetic_prod_linsacan')
+    
+    # xlim,fname = 20001,'./output/cap_loggs_bppData_prod_20000_20201204_0135PM.pkl'
+    # timedata,opt_ast_lens,data = get_plots_temp(fname=fname,flag_savefig=True,xlim=xlim,
+    #     savefname_common='./output/figures/new/cap_real_price_prod')
