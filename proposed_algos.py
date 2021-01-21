@@ -14,17 +14,16 @@ def preprocess(prod, C, p, algo, nEst=10,nCand=40,feasibles = None):
 
     if algo == 'special_case_LSH':
         print "\tLSH DB Special init..."
-        db =  LSHForest(n_estimators= nEst, n_candidates=nCand, n_neighbors=C)
+        db =  LSHForest(n_estimators= nEst, n_candidates=nCand, n_neighbors=C, min_hash_match=2)
     elif algo=='general_case_LSH':
         print "\tLSH DB General init..."
-        db =  LSHForest(n_estimators= nEst, n_candidates=nCand, n_neighbors=1)
+        db =  LSHForest(n_estimators= nEst, n_candidates=nCand, n_neighbors=1, min_hash_match=2)
     elif algo=="Special_case_BZ":
         print "\tBZ DB Special init..."
-        db = LSHForest(n_estimators= nEst, n_candidates=nCand, n_neighbors=C)
+        db = LSHForest(n_estimators= nEst, n_candidates=nCand, n_neighbors=C, min_hash_match=2)
     elif algo=='general_case_BZ':
         print "\tLSH DB General init..."
         db =  LSHForest(n_estimators= nEst, n_candidates=nCand, n_neighbors=1, min_hash_match=2)
-        #db =  NearestNeighbors(n_neighbors=1, metric='cosine', algorithm='brute')
     elif algo=='special_case_exact':
         print "\tExact DB Special init..."
         db =  NearestNeighbors(n_neighbors=C, metric='cosine', algorithm='brute') 
@@ -241,7 +240,7 @@ def capAst_AssortBZ(prod, C, p, v, meta):
     
     # Inititate NBS parameters and define helper functions
     #compstep_prob = meta['default_correct_compstep_probability']
-    compstep_prob = 0.6
+    compstep_prob = 1
     if 'correct_compstep_probability' in meta.keys():
         if meta['correct_compstep_probability'] >= 0.5:
             compstep_prob = meta['correct_compstep_probability']
@@ -336,7 +335,6 @@ def capAst_AssortBZ(prod, C, p, v, meta):
     #solve_log['setup_time'] = timeTaken - solve_time
     print "\t\tAssortBZ Opt Set Size:",len(best_set)
     print "\t\tAssortBZ Opt Set:",best_set
-    print "\t\tAssortBZ Opt Rev:",best_set_revenue
 
     return best_set_revenue, best_set, timeTaken 
 
@@ -360,7 +358,7 @@ def genAst_AssortBZ(prod, C, p, v, meta):
     
     # Inititate NBS parameters and define helper functions
     #compstep_prob = meta['default_correct_compstep_probability']
-    compstep_prob = 0.7
+    compstep_prob = 0.9
     if 'correct_compstep_probability' in meta.keys():
         if meta['correct_compstep_probability'] >= 0.5:
             compstep_prob = meta['correct_compstep_probability']
@@ -377,6 +375,7 @@ def genAst_AssortBZ(prod, C, p, v, meta):
     max_iters = 1000
     early_termination_width = 1
     belief_fraction = 0.95
+    print ("\t v[0] value",v[0])
 
 
     # Initialize Uniform Distribution
@@ -425,7 +424,6 @@ def genAst_AssortBZ(prod, C, p, v, meta):
         current_set_revenue = calcRev(maxSet, p, v, prod)
         if current_set_revenue > best_set_revenue:
             best_set, best_set_revenue = maxSet, current_set_revenue
-  
         if (maxPseudoRev / v[0]) >= median:
             range_dist[range_idx >= median] += np.log(compstep_prob)
             range_dist[range_idx < median] += np.log(1 - compstep_prob)
@@ -463,6 +461,5 @@ def genAst_AssortBZ(prod, C, p, v, meta):
     
     print "\t\tAssortBZ-Z Opt Set Size:",len(best_set)
     print "\t\tAssortBZ-Z Opt Set:",best_set
-    print "\t\tAssortBZ-Z Opt Rev:",best_set_revenue
 
     return best_set_revenue, best_set, timeTaken

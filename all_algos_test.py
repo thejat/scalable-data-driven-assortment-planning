@@ -1,6 +1,13 @@
+
+
 import numpy as np
 import time, pickle, datetime, random, os, copy, collections
-from real_data import get_feasibles_realdata
+from real_data import get_feasibles_realdata, get_feasibles_realdata_by_assortment
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from itertools import chain
+from collections import Counter
+import random
 
 from competing_algos import capAst_static_mnl, capAst_LP, capAst_adxopt, genAst_oracle
 from proposed_algos import capAst_AssortExact, capAst_AssortLSH, genAst_AssortLSH, genAst_AssortExact, preprocess, capAst_AssortBZ, genAst_AssortBZ
@@ -105,35 +112,69 @@ def compute_overlap_stats(benchmark,algos,loggs,i,t,badError,maxSetBenchmark,eps
           badError = badError +1
   return loggs,badError
 
+
+def get_real_prices_parameters_by_product(subset):
+    fname = os.getcwd() + '/freq_itemset_data/original_data/ta_feng_all_months_merged.csv'
+    df = pd.read_csv(fname)
+    le = LabelEncoder()
+    df['ENCODED_PRODUCT_ID'] = le.fit_transform(df['PRODUCT_ID'])
+    dict1 = df.set_index('ENCODED_PRODUCT_ID').to_dict()['SALES_PRICE']
+    df1 = df.groupby(['TRANSACTION_DT','CUSTOMER_ID'], as_index=False)['ENCODED_PRODUCT_ID'].agg(lambda x: list(x))
+    df1['ENCODED_PRODUCT_ID'] = df1['ENCODED_PRODUCT_ID'].apply(lambda x:[ int(y) for y in x])  
+    Y = pd.Series(Counter(chain.from_iterable(df1.ENCODED_PRODUCT_ID)))
+    df2 = pd.DataFrame(Y)
+    df2.reset_index(level=0, inplace=True)
+    df2.columns = ['Product','Frequency']
+    df2['v'] = df2['Frequency']/Y.sum()
+    df2['price'] = df2['Product'].map(dict1) 
+    dict2 = dict(zip(df2['Product'], df2[['v','price']].values.tolist()))
+    v = []
+    p = []
+    for i in subset:
+        v.append(dict2[i][0])
+        p.append(dict2[i][1])
+    #v_0 = df2['v'].sum()*(3.0/7)
+    v_0 = sum(v)*(3.0/7)
+    v.insert(0,v_0)
+    p.insert(0,0)
+    
+    return np.array(p), np.array(v)
+    
 def generate_instance_general(price_range,prod,genMethod,iterNum,lenFeas=None,real_data=None):
-
-  #arbitrary sets
-
-  if real_data is None:
-    if lenFeas is None:
-      nsets = int(prod**1.5)
-    else:
-      nsets = lenFeas
+    
+    
+    if genMethod == 'tafeng' and lenFeas != None :
+        feasibles, C, subset = get_feasibles_realdata_by_assortment(os.getcwd() +'/freq_itemset_data/tafeng_v1_0p00001_119578.txt',lenFeas, isCSV=False,min_ast_length=3)
+        
+    
+    if real_data is None and genMethod != "tafeng" :
+        if lenFeas is None:
+            nsets = int(prod**1.5)
+        else:
+            nsets = lenFeas
 
     #synthetic
-    feasibles = []
-    C = 0
-    for i in range(nsets):
-      temp = random.randint(1,2**prod-1)
-      temp2 = [int(x) for x in format(temp,'0'+str(prod)+'b')]
-      set_char_vector = np.asarray(temp2)
-      feasibles.append(set_char_vector)
-      C = max(C,np.sum(set_char_vector))
-  else:
+        feasibles = []
+        C = 0
+        for i in range(nsets):
+            temp = random.randint(1,2**prod-1)
+            temp2 = [int(x) for x in format(temp,'0'+str(prod)+'b')]
+            set_char_vector = np.asarray(temp2)
+            feasibles.append(set_char_vector)
+            C = max(C,np.sum(set_char_vector))
+    elif real_data is not None:
     #real
-    feasibles,C,prod = get_feasibles_realdata(fname=real_data['fname'],isCSV=real_data['isCSV'],min_ast_length=real_data['min_ast_length'])
-
-
-  p,v = generate_instance(price_range,prod,genMethod,iterNum)
-
-
-  return p,v,feasibles,int(C),prod
-
+        feasibles,C,subset = get_feasibles_realdata(fname=real_data['fname'],isCSV=real_data['isCSV'],min_ast_length=real_data['min_ast_length'])
+        prod = len(subset)
+    
+    if genMethod == 'tafeng':
+      p,v = get_real_prices_parameters_by_product(subset)
+      return p,v,feasibles,int(C),len(subset)
+    else: 
+      p,v = generate_instance(price_range,prod,genMethod,iterNum)
+      return p,v,feasibles,int(C),prod 
+         
+    
 
 def run_prod_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synthetic'):
 
@@ -142,20 +183,21 @@ def run_prod_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synt
   np.random.seed(1000)
   price_range = 1000      #denotes highest possible price of a product
   eps         = 0.1       #tolerance
-  N           = 1 #   #number of times Monte Carlo simulation will run
+  N           = 50 #   #number of times Monte Carlo simulation will run
   if flag_capacitated == True:
-    C           = 20       #capacity of assortment in [10,20,50,100,200]
+    C           = 50       #capacity of assortment in [10,20,50,100,200]
     if genMethod=='synthetic':
       prodList    = [15000,20000] #[100,200,300] #
     else:
-      prodList    = [100, 250, 500, 1000, 3000, 5000, 7000,10000,20000]
-    algos = collections.OrderedDict({'Assort-Exact':capAst_AssortExact,'LP':capAst_LP,'Adxopt':capAst_adxopt, 'Assort-BZ':capAst_AssortBZ})#,'Static-MNL':capAst_paat}
+      prodList    = [100, 250, 500, 1000, 3000, 5000, 7000, 10000, 15000]
+    #algos = collections.OrderedDict({'Assort-Exact':capAst_AssortExact,'LP':capAst_LP})
+    algos = collections.OrderedDict({'Assort-Exact':capAst_AssortExact,'LP':capAst_LP,'Adxopt':capAst_adxopt})#,'Static-MNL':capAst_paat}
     benchmark = 'LP'#'Static-MNL'#
     loggs = get_log_dict(prodList,N,algos,price_range,eps,C)
 
   else:
-    prodList    = [100,200,400,800,1600]
-    algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-Exact-G':genAst_AssortExact,'Assort-LSH-G':genAst_AssortLSH, 'Assort-BZ-G':genAst_AssortBZ })
+    prodList    = [100,200,400,800,1600]  
+    algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-Exact-G':genAst_AssortExact,'Assort-LSH-G':genAst_AssortLSH})
     benchmark   = 'Linear-Search'
     loggs = get_log_dict(prodList,N,algos,price_range,eps)
     loggs['additional']['lenFeasibles'] = np.zeros(len(prodList))
@@ -174,7 +216,12 @@ def run_prod_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synt
       #generating the price
       meta = {'eps':eps}
       if flag_capacitated == True:
-        p,v = generate_instance(price_range,prod,genMethod,t)
+        file_1 = open("products.pkl",'rb')   
+        product_choices = pickle.load(file_1)
+        choices = random.sample(product_choices,prod)
+        subset = choices  
+        p,v = get_real_prices_parameters_by_product(subset)     
+        #p,v = generate_instance(price_range,prod,genMethod,t)
       else:
         p,v,feasibles,C,prod = generate_instance_general(price_range,prod,genMethod,t)
         loggs['additional']['C'][i,t] = C
@@ -243,8 +290,9 @@ def run_lenFeas_experiment(flag_savedata=True,genMethod='synthetic',nEst=20,nCan
   N           = 50 #   #number of times Monte Carlo simulation will run
   prod        = 1000
   lenFeasibles= [100,200,400,800,1600,3200,6400,12800,25600,51200]
-  algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-LSH-G':genAst_AssortLSH,'Assort-Exact-G':genAst_AssortExact,'Assort-BZ-G':genAst_AssortBZ
-                                         })
+  #lenFeasibles= [51200]
+  #algos       = collections.OrderedDict({'Linear-Search':genAst_oracle, 'Assort-BZ-G' : genAst_AssortBZ})
+  algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-LSH-G':genAst_AssortLSH,'Assort-Exact-G':genAst_AssortExact, 'Assort-BZ-G' : genAst_AssortBZ})
   benchmark   = 'Linear-Search'
   loggs = get_log_dict(lenFeasibles,N,algos,price_range,eps) #hack
   loggs['additional']['lenFeasibles'] = lenFeasibles
@@ -273,7 +321,9 @@ def run_lenFeas_experiment(flag_savedata=True,genMethod='synthetic',nEst=20,nCan
         meta['db_exact'],_,meta['normConst'] = preprocess(prod, C, p, 'general_case_exact',feasibles=feasibles)
       if 'Assort-LSH-G' in algos:
         meta['db_LSH'],_,meta['normConst'] = preprocess(prod, C, p, 'general_case_LSH', nEst=nEst,nCand=nCand,feasibles=feasibles)#Hardcoded values
-
+      if 'Assort-BZ-G' in algos:
+        meta['db_BZ'],_,meta['normConst'] = preprocess(prod, C, p, 'general_case_BZ', nEst=nEst,nCand=nCand,feasibles=feasibles)#Hardcoded values  
+        
 
 
       #run algos
@@ -320,6 +370,8 @@ def run_real_ast_experiment(flag_savedata=True,nEst=20,nCand=80):
     {'fname':'freq_itemset_data/foodmartFIM0p0001_233231_txns4141.csv','isCSV':True,'min_ast_length':4},
     {'fname':'freq_itemset_data/chains0p00001_txns1112949.txt','isCSV':False,'min_ast_length':5},
     {'fname':'freq_itemset_data/OnlineRetail0p000001_txns540455.txt','isCSV':False,'min_ast_length':3}]
+    #{'fname':'freq_itemset_data/tafeng_v1_0p00001_119578.txt','isCSV':False,'min_ast_length':3}]
+  #real_data_list = [{'fname':'freq_itemset_data/tafeng_v1_0p00001_119578.txt','isCSV':False,'min_ast_length':8}]
   algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-LSH-G':genAst_AssortLSH,'Assort-Exact-G':genAst_AssortExact, 'Assort-BZ-G':genAst_AssortBZ})
   #algos       = collections.OrderedDict({'Linear-Search':genAst_oracle, 'Assort-BZ-G':genAst_AssortBZ})
   benchmark   = 'Linear-Search'
@@ -340,7 +392,8 @@ def run_real_ast_experiment(flag_savedata=True,nEst=20,nCand=80):
 
       #generating the price
       meta = {'eps':eps}
-      p,v,feasibles,C,prod = generate_instance_general(price_range,None,'synthetic',t,lenFeas=None,real_data=real_data)
+      p,v,feasibles,C,prod = generate_instance_general(price_range,None,'synthetic',t,lenFeas=None,real_data=real_data)  
+      #p,v,feasibles,C,prod = generate_instance_general(price_range,None,'tafeng',t,lenFeas=None,real_data=real_data)
       loggs['additional']['C'][i,t] = C
       meta['feasibles'] = feasibles
       
@@ -492,13 +545,15 @@ if __name__=='__main__':
   # loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='bppData',nEst=40,nCand=160)
   # loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='bppData',nEst=100,nCand=200)
   # loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='bppData',nEst=20,nCand=80)
+  #  loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='tafeng',nEst=20,nCand=80)
 
 
   #2. General case: frequent itemset data
   
-   loggs7 = run_real_ast_experiment(flag_savedata = True,nEst=40,nCand=160)
+   loggs7 = run_real_ast_experiment(flag_savedata = True,nEst=20,nCand=80)
 
   #3. Special case (cap constrained): bpp data and synthetic data
+  #  loggs2 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='tafeng')
 
   # loggs1 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='synthetic')
   # loggs2 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='bppData')
