@@ -1,10 +1,13 @@
 import numpy as np
-# import matplotlib
+import matplotlib
 # matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import seaborn as sns
 import pickle
+from math import log
+sns.set()
+
 
 
 plt.rcParams.update({'legend.fontsize': 'xx-large',
@@ -73,9 +76,12 @@ def get_adx_plot(params):
 
     #adxopt data {'fname':savefname_common+'adxopt_time.png','flag_savefig':flag_savefig,'xlims':[0,xlim],'loggs':loggs}
     opt_ast_lens = np.zeros((len(params['loggs']['additional']['prodList']),params['loggs']['additional']['N']))
-    for i,_ in enumerate(params['loggs']['additional']['prodList'][:-2]):
+    for i,_ in enumerate(params['loggs']['additional']['prodList'][:]):
         for j in range(params['loggs']['additional']['N']):
             opt_ast_lens[i,j] = len(params['loggs']['Adxopt']['maxSet'][(i,j)])
+    
+    print params['loggs']['additional']['prodList'][:-5]
+    print opt_ast_lens    
 
     timedata = params['loggs']['Adxopt']['time']
 
@@ -112,7 +118,9 @@ def get_adx_plot(params):
     fig,ax = plt.subplots(1)
     p=ax.pcolor(data,cmap='RdBu',vmin=np.nanmin(data),vmax=np.nanmax(data))
     # p=ax.pcolor(count,cmap='RdBu',vmin=np.nanmin(count),vmax=np.nanmax(count))
-    fig.colorbar(p,ax=ax)
+    clt = fig.colorbar(p,ax=ax)
+    clt.ax.get_yaxis().labelpad = 25
+    clt.ax.set_ylabel('Time(s)', rotation=270)
 
     # Set the ticks and labels...
     plt.xticks(range(len(prodList)),prodList)
@@ -120,7 +128,6 @@ def get_adx_plot(params):
     ax.set_xticklabels(ax.xaxis.get_majorticklabels(), rotation=45)
     plt.yticks(range(len(thresholds)),thresholds)
     plt.ylabel('Optimal assortment size')
-
 
     if params['flag_savefig'] == True:
         plt.savefig(params['fname'])  
@@ -145,7 +152,7 @@ def get_plots_temp(fname,flag_savefig=False,xlim=5001,loggs=None,
     ###plot2
     params = {'fname':savefname_common+'_revPctErr.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
         'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Pct. Err. in Revenue',
-        'logname':'revPctErr','xsname':xsname,'ylims':[-.02,0.6],'flag_rmadxopt':False}
+        'logname':'revPctErr','xsname':xsname,'ylims':[0.00,0.06],'flag_rmadxopt':False}
     get_plot_subroutine_temp(params)
 
 
@@ -161,11 +168,12 @@ def get_plot_subroutine_temp(params):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     xs = params['loggs']['additional'][params['xsname']]
-    algonames_new = {'Assort-LSH':'Assort-MNL(approx)','Assort-Exact':'Assort-MNL','Adxopt':'Adxopt','LP':'LP'} # params['loggs']['additional']['algonames']
+    algonames_new = {'Assort-LSH':'Assort-MNL(approx)','Assort-Exact':'Assort-MNL','Adxopt':'ADXOpt','LP':'LP'} # params['loggs']['additional']['algonames']
     # print algonames_new
-
+    params['loggs']['additional']['algonames'] = ['Adxopt', 'Assort-Exact',  'LP']
+    #print(params['loggs']['additional']['algonames'])
     for e,algo in enumerate(params['loggs']['additional']['algonames']):
-        if params['flag_rmadxopt']==True and algo=='Adxopt':
+        if params['flag_rmadxopt']==True and algo=='Adx-opt':
             continue
         else:
             if params['flag_bars']==True:
@@ -174,26 +182,37 @@ def get_plot_subroutine_temp(params):
                 ax.fill_between(xs, ys_lb, ys_ub, alpha=0.5, edgecolor='#CC4F1B', facecolor='#FF9848')
             # ys = np.asarray([np.percentile(params['loggs'][algo][params['logname']][i,:],50) for i in range(len(xs))])
             ys = np.asarray([np.mean(params['loggs'][algo][params['logname']][i,:]) for i in range(len(xs))])
-            if algo=='Adxopt':
-                ax.plot(xs, ys,label=algonames_new[algo],marker='>',markersize=10)
-            elif algo=='LP' and params['logname'] != 'time':
-                ax.plot(xs, ys,label=algonames_new[algo],marker='<',markersize=10)
-            else:
-                ax.plot(xs, ys,label=algonames_new[algo])
+            #ys = np.asarray([(log(np.mean(params['loggs'][algo][params['logname']][i,:]))) for i in range(len(xs))])    
+            #ys = params['loggs'][algo][params['logname']]    
+            if algo =='Adxopt':
+                ax.set_yscale('log')
+                ax.plot(xs, ys,label=algonames_new[algo], marker = '<', markersize=10, color = 'orange')
+            elif algo=='LP':
+                ax.plot(xs, ys,label=algonames_new[algo], marker = '>', markersize=10, color = 'k', alpha =0.8)
+            else: 
+                ax.plot(xs, ys,label=algonames_new[algo], marker = '*', markersize=10, color = 'g')
         # print algo, algonames_new[e],ys
 
-
+    ax.set_facecolor('white')
+    for spine in ['left', 'bottom']:
+        ax.spines[spine].set_color('k')
+    import matplotlib.ticker as mtick
+    #plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1))
+    ax.get_xaxis().set_major_formatter(
+    matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))      
+    plt.rcParams["figure.figsize"] = (8,6)
     ax.legend(loc='best', bbox_to_anchor=(0.5, 1.05), ncol=3)
     plt.ylabel(params['ylab'])
     plt.xlabel(params['xlab'])
-    plt.legend(loc='best')
+    plt.legend(loc='best', facecolor= 'inherit', framealpha=0.0, frameon=None)
     plt.xlim(params['xlims'])
     if params['ylims'] is not None:
         plt.ylim(params['ylims'])
-
+    plt.xticks(np.arange(0, 15001, 2500))
     if params['flag_savefig'] == True:
         plt.savefig(params['fname'])  
     plt.show()
+    
 
 #############################################
 
@@ -234,34 +253,48 @@ def get_plots(fname,flag_savefig=False,xlim=5001,loggs=None,
 def get_freqitem_subroutine(params):
 
     loggs = params['loggs']
-    loggs['additional']['algonames_new'] = ['Assort-MNL(approx)','Assort-MNL','Exhaustive']
+    loggs['additional']['algonames'] = ['Assort-LSH-G', 'Assort-BZ-G', 'Assort-Exact-G', 'Linear-Search']
+    #loggs['additional']['algonames_new'] = ['Assort-MNL(approx)','Assort-MNL','Exhaustive','Assort-MNL(BZ)']\
+    loggs['additional']['algonames_new'] = ['Assort-MNL(Approx)','Assort-MNL(BZ)','Assort-MNL','Exhaustive']
+    #loggs['additional']['algonames_new'] = ['Exhaustive','Assort-MNL(BZ)']
     ind = np.arange(len(loggs['additional']['real_data_list']))  # the x locations for the groups
-    width = 0.25       # the width of the bars
+    width = 0.2       # the width of the bars
     fig, ax = plt.subplots()
 
     rects = {}
     colors = 'rbgkymc'
     for e,algoname in enumerate(loggs['additional']['algonames']):
         rects[algoname] = ax.bar(ind+e*width,tuple(np.mean(loggs[algoname][params['logname']][i,:]) for i in ind), width, color=colors[e])
-
+    
     ax.set_ylabel(params['ylab'])
     if params['ylim'] is not None:
         ax.set_ylim(params['ylim'])
-    ax.set_xticks(ind+1.4*width)
-    ax.set_xticklabels( ('Retail', 'Foodmart', 'Chainstore', 'E-commerce') )
-    ax.legend( (rects[algoname][0] for algoname in loggs['additional']['algonames']), tuple(loggs['additional']['algonames_new']),loc='best')
+    ax.set_xticks(ind+1.5*width)
+    ax.set_xticklabels( ('Retail', 'Foodmart', 'Chainstore', 'E-commerce','Tafeng') )
+    ax.set_facecolor('white')
+    ax.legend( (rects[algoname][0] for algoname in loggs['additional']['algonames']), tuple(loggs['additional']['algonames_new']),loc='best', framealpha=0.0, frameon=None)
+    plt.rcParams["figure.figsize"] = (12,8)
+    import matplotlib.ticker as mtick
 
+    plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1))
+    
     def autolabel(rects):
         # attach some text labels
         for rect in rects:
             height = rect.get_height()
-            ax.text(rect.get_x()+rect.get_width()/2., 1.05*height, '%.2f'%(height),
-                    ha='center', va='bottom')
+            #ax.text(rect.get_x()+rect.get_width()/2., 1.02*height, '%.2f'%(height),
+            ax.text(rect.get_x()+rect.get_width()/2., 1.02*height, "{:.0%}".format(height),        
+                    
+                    ha='center', va='bottom', fontsize = 15)
 
     for algoname in loggs['additional']['algonames']:
         autolabel(rects[algoname])
-    
-
+    #plt.xticks(fontsize=26)
+    #plt.ylabel(params['ylab'], fontsize=32)
+    #plt.yticks(fontsize=28)
+    #plt.ylabel(fontsize=30)
+    for spine in ['left', 'bottom']:
+        ax.spines[spine].set_color('k')
     if params['flag_savefig'] == True:
         plt.savefig(params['fname']) 
     # plt.show()
@@ -285,7 +318,7 @@ def get_freqitem_plots(fname,flag_savefig=False):
 
     ###plot2 #fname[:-4]+'_revPctErr.png'
     params = {'fname':'./output/figures/gen_ast_real_set_revPctErr.png','flag_savefig':flag_savefig,
-        'loggs':loggs,'ylab':'Pct. Err. in Revenue','logname':'revPctErr','ylim':[0,.1]}
+        'loggs':loggs,'ylab':'Pct. Err. in Revenue','logname':'revPctErr','ylim':[0,.2]}
     get_freqitem_subroutine(params)
 
 
@@ -298,21 +331,33 @@ def get_merged_plot_subroutine(params):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     xs = params['xs']
-
+    params['algonames'] = ['Assort-MNL(Approx)', 'Assort-MNL(BZ)', 'Assort-MNL', 'Exhaustive']
+    colors = 'rbgkymc'
+    
+    print(params['algonames'])
     for e,algo in enumerate(params['algonames']):
         ys = params[algo][params['logname']]
-        ax.plot(xs, ys,label=algo)
-
+        ax.plot(xs, ys,label=algo, color = colors[e])
+    plt.rcParams["figure.figsize"] = (8,6)    
     ax.legend(loc='best', bbox_to_anchor=(0.5, 1.05), ncol=3)
     plt.ylabel(params['ylab'][params['logname']])
     plt.xlabel(params['xlab'])
-    plt.legend(loc='best')
+    plt.legend(loc='best', facecolor= 'inherit', framealpha=0.0, frameon=None)
     plt.xlim(params['xlims'])
     if params['ylims'][params['logname']] is not None:
         plt.ylim(params['ylims'][params['logname']])
     if params['flag_savefig'] == True:
         plt.savefig(params['fname'])  
+    ax.get_xaxis().set_major_formatter(
+    matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
+    ax.set_facecolor('white')
+    for spine in ['left', 'bottom']:
+        ax.spines[spine].set_color('k')
+    import matplotlib.ticker as mtick
+    #plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1))    
     plt.show()
+
+    
 
 def get_merged_plots(fname_prefix,fnames,flag_savefig,nest_ncand,xlim,dat):
 
@@ -335,41 +380,63 @@ def get_merged_plots(fname_prefix,fnames,flag_savefig,nest_ncand,xlim,dat):
         params['Exhaustive'][logname] = np.asarray([np.mean(alldata[nest_ncand[0]]['Linear-Search'][logname][i,:]) for i in range(len(params['xs']))])
         params['Assort-MNL'][logname] = np.asarray([np.mean(alldata[nest_ncand[0]]['Assort-Exact-G'][logname][i,:]) for i in range(len(params['xs']))])
 
-    algoTemp = 'Assort-MNL(approx)'
+    algoTemp = 'Assort-MNL(Approx)'
     for nest,ncand in nest_ncand:
-        algoTempNew = algoTemp+'['+str(nest)+','+str(ncand)+']'
+        #algoTempNew = algoTemp+'['+str(nest)+','+str(ncand)+']'
+        algoTempNew = algoTemp
         params['algonames'].append(algoTempNew)
         params[algoTempNew] = {}
         for logname in lognames:
             params[algoTempNew][logname] = np.asarray([np.mean(alldata[(nest,ncand)]['Assort-LSH-G'][logname][i,:]) for i in range(len(params['xs']))])
+    
+    algoTemp = 'Assort-MNL(BZ)'
+    for nest,ncand in nest_ncand:
+        if nest == 20 and ncand == 80:
+            #algoTempNew = algoTemp+'['+str(nest)+','+str(ncand)+']'
+            algoTempNew = algoTemp
+            params['algonames'].append(algoTempNew)
+            params[algoTempNew] = {}
+            for logname in lognames:
+                params[algoTempNew][logname] = np.asarray([np.mean(alldata[(nest,ncand)]['Assort-BZ-G'][logname][i,:]) for i in range(len(params['xs']))])        
 
     params['ylab'] = {'time':'Time (s)', 'revPctErr':'Pct. Err. in Revenue','setOlp':'Pct. Set Overlap' }
-    params['ylims'] = {'time':None, 'revPctErr':[-0.02,0.15],'setOlp':[0,1.1] }
+    params['ylims'] = {'time':None, 'revPctErr':[0.0,0.2],'setOlp':[0,1.1] }
     for logname in lognames:
         params['logname'] = logname
         params['fname'] = './output/figures/gen_ast_'+dat+'_price_'+logname+'.png'
         get_merged_plot_subroutine(params)
 
 
-def get_static_mnl_plot(fname,flag_savefig,xlim,savefname):
-
-    loggs = pickle.load(open(fname,'rb'))
-
+def get_static_mnl_plot(fname, fname1,flag_savefig,xlim,savefname):
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    xs = loggs['additional']['prodList']
-    ys_lb  = np.asarray([np.percentile(loggs['Static-MNL']['time'][i,:],5) for i in range(len(xs))])
-    ys_ub  = np.asarray([np.percentile(loggs['Static-MNL']['time'][i,:],95) for i in range(len(xs))])
-    ax.fill_between(xs, ys_lb, ys_ub, alpha=0.5, edgecolor='#CC4F1B', facecolor='#FF9848')
-    ys = np.asarray([np.mean(loggs['Static-MNL']['time'][i,:]) for i in range(len(xs))])
-    ax.plot(xs, ys,label='Static-MNL')
+    colors = 'gr'
+    count = 0
+    for i in [fname, fname1]:
+        print(i)
+        loggs = pickle.load(open(fname,'rb')) 
+        xs = loggs['additional']['prodList']
+        ys_lb  = np.asarray([np.percentile(loggs['Static-MNL']['time'][i,:],5) for i in range(len(xs))])
+        ys_ub  = np.asarray([np.percentile(loggs['Static-MNL']['time'][i,:],95) for i in range(len(xs))])
+        ax.fill_between(xs, ys_lb, ys_ub, alpha=0.5, edgecolor='#CC4F1B', facecolor='#FF9848')
+        ys = np.asarray([np.mean(loggs['Static-MNL']['time'][i,:]) for i in range(len(xs))])
+        if count == 0:
+            ax.plot(xs, ys,label='Static-MNL(C=50)', color = 'b', marker = '', markersize=10)
+        if count == 1:
+            ax.plot(xs, ys,label='Static-MNL(C=100)', color = 'b', marker = 'o', markersize=10)
 
+        count = count + 1
+        
+        
+    plt.rcParams["figure.figsize"] = (8,6)
     ax.legend(loc='best', bbox_to_anchor=(0.5, 1.05), ncol=3)
     plt.ylabel('Time (s)')
     plt.xlabel('Number of Items')
-    plt.legend(loc='best')
+    plt.legend(loc='best', facecolor= 'inherit', framealpha=0.0, frameon=None)
     plt.xlim([0,xlim])
-
+    for spine in ['left', 'bottom']:
+        ax.spines[spine].set_color('k')
+    ax.set_facecolor('white')
     if flag_savefig == True:
         plt.savefig(savefname)  
     # plt.show()
@@ -384,19 +451,31 @@ if __name__ == '__main__':
     # 'gen_loggs_bppData_lenF_51200_nCand_200_nEst_100_20170526_0118PM.pkl']
     # nest_ncand = [(20,80),(40,160),(100,200)]
     # get_merged_plots(fname_prefix,fnames,flag_savefig=True,nest_ncand=nest_ncand,xlim=51201,dat='real')
+    
+    
+     #bpp 
+     fname_prefix = './output/results_final_vs_nassortments/'
+     fnames = ['gen_loggs_bppData_lenF_51200_nCand_80_nEst_20_20210227_0426PM_uniform_tole1.pkl']
+    # fnames = ['gen_loggs_bppData_lenF_51200_nCand_80_nEst_20_20210123_1157PM_0p6.pkl']
+     #fnames = ['gen_loggs_tafeng_lenF_51200_nCand_80_nEst_20_20210113_1121PM_minhash3_updated_0p99.pkl']
+     nest_ncand = [(20,80)]
+     get_merged_plots(fname_prefix,fnames,flag_savefig=True,nest_ncand=nest_ncand,xlim=51201,dat='real')
+    
 
     # #synthetic
-    # fname_prefix = './output/results20170526_final_vs_nassortments/'
-    # fnames = ['gen_loggs_synthetic_lenF_51200_nCand_80_nEst_20_20170527_1043PM.pkl',
-    # 'gen_loggs_synthetic_lenF_51200_nCand_160_nEst_40_20170526_0740AM.pkl',
-    # 'gen_loggs_synthetic_lenF_51200_nCand_200_nEst_100_20170526_0952AM.pkl']
-    # nest_ncand = [(20,80),(40,160),(100,200)]
-    # get_merged_plots(fname_prefix,fnames,flag_savefig=True,nest_ncand=nest_ncand,xlim=51201,dat='synthetic')
+# =============================================================================
+#      fname_prefix = './output/results_final_vs_nassortments/'
+#      fnames = ['gen_loggs_tafeng_lenF_51200_nCand_80_nEst_20_20201228_0619PM.pkl',
+#      'gen_loggs_tafeng_lenF_51200_nCand_160_nEst_40_20201228_0140PM.pkl',
+#      'gen_loggs_tafeng_lenF_51200_nCand_200_nEst_100_20201228_0417AM.pkl']
+#      nest_ncand = [(20,80),(40,160),(100,200)]
+#      get_merged_plots(fname_prefix,fnames,flag_savefig=True,nest_ncand=nest_ncand,xlim=51201,dat='synthetic')
+# =============================================================================
 
 
     ##2. DONE general: freq_item_dataset
-    # get_freqitem_plots('./output/results20170527_final_freq_sets/gen_loggs_real_ast_upto3_nCand_160_nEst_40_20170528_0154AM.pkl',flag_savefig=True)
-
+    # get_freqitem_plots('./output/trial_for_ast_utility.pkl',flag_savefig = True)
+    # get_freqitem_plots('./output/gen_loggs_real_ast_upto3_nCand_80_nEst_20_20210108_0151AM_compstep_0p9_hash2.pkl',flag_savefig=True)
 
 
 
@@ -406,14 +485,18 @@ if __name__ == '__main__':
     # timedata,opt_ast_lens,data = get_plots_temp(fname=fname,flag_savefig=True,xlim=xlim,
     #     savefname_common='./output/figures/new/cap_real_price_prod')
 
-    # xlim,fname = 1001,'./output/results20170528_final_staticmnl/cap_loggs_bppData_prod_1000_20170529_0633AM.pkl'
-    # get_static_mnl_plot(fname=fname,flag_savefig=True,xlim=xlim,savefname='./output/figures/cap_real_price_prod_staticmnl.png')
+    # xlim,fname,fname1 = 1001,'./output/cap_loggs_tafeng_prod_1000_20210226_0828PM_cap50_staticmnl_tafeng.pkl', './output/cap_loggs_tafeng_prod_1000_20210226_1035PM_cap100_tafeng_staticmnl.pkl'
+    # get_static_mnl_plot(fname=fname,fname1 = fname1, flag_savefig=True,xlim=xlim,savefname='./output/figures/cap_real_price_prod_staticmnl.png')
 
     # #synthetic
     # xlim,fname = 20001,'./output/results20170528_final_vs_prod/cap_loggs_synthetic_prod_20000_20170529_1214AM.pkl'
     # timedata,opt_ast_lens,data = get_plots(fname=fname,flag_savefig=True,xlim=xlim,
     #     savefname_common='./output/figures/cap_synthetic_prod')
 
-    xlim,fname = 10001,'./output/cap_loggs_synthetic_prod_10000_20180416_0315PM.pkl'
-    timedata,opt_ast_lens,data = get_plots(fname=fname,flag_savefig=True,xlim=xlim,
-        savefname_common='./output/cap_synthetic_prod_linsacan')
+    # xlim,fname = 10001,'./output/cap_loggs_synthetic_prod_10000_20180416_0315PM.pkl'
+    # timedata,opt_ast_lens,data = get_plots(fname=fname,flag_savefig=True,xlim=xlim,
+    #    savefname_common='./output/cap_synthetic_prod_linsacan')
+    
+    #xlim,fname = 15001,'./output/try_me.pkl'
+    #timedata,opt_ast_lens,data = get_plots_temp(fname=fname,flag_savefig=True,xlim=xlim,
+    #    savefname_common='./output/figures/new/cap_real_price_prod')
