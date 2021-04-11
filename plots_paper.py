@@ -4,7 +4,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import seaborn as sns
-import pickle
+import pickle, collections
 from math import log
 sns.set()
 
@@ -212,6 +212,78 @@ def get_plot_subroutine_temp(params):
     plt.show()
     
 
+def get_plots_combined(fname,flag_savefig=False,xlim=5001,loggs=None,
+    xsname='prodList',xlab='Number of Items',savefname_common='./output/undefined'):
+
+    #Load data
+    loggs = pickle.load(open(fname,'rb'))
+
+    ###plot1
+    params = {'fname':savefname_common+'_time.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
+        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Time (s)',
+        'logname':'time','xsname':xsname,'ylims':None,'flag_rmadxopt':True}
+    get_plot_subroutine_combined(params)
+
+
+    ###plot2
+    params = {'fname':savefname_common+'_revPctErr.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
+        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Pct. Err. in Revenue',
+        'logname':'revPctErr','xsname':xsname,'ylims':[0.00,0.06],'flag_rmadxopt':False}
+    get_plot_subroutine_combined(params)
+
+
+    ###plot3
+    params = {'fname':savefname_common+'_setOlp.png','flag_savefig':flag_savefig,'xlims':[0,xlim],
+        'loggs':loggs,'flag_bars':False,'xlab':xlab,'ylab':'Pct. Set Overlap',
+        'logname':'setOlp','xsname':xsname,'ylims':[0,1.1],'flag_rmadxopt':False}
+    get_plot_subroutine_combined(params)
+    
+def get_plot_subroutine_combined(params):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    xs = params['loggs']['additional'][params['xsname']]
+    algonames_new = {'LP_50' : 'LP (C=50)', 'LP_100' : 'LP (C=100)', 'Adxopt_50' : 'ADXOpt (C=50)', 'Adxopt_100' : 'ADXOpt (C=100)', 'Assort-Exact_50':'Assort-MNL (C=50)','Assort-Exact_100':'Assort-MNL (C=100)'} # params['loggs']['additional']['algonames']
+    # print algonames_new
+    for e,algo in enumerate(params['loggs']['additional']['algonames']):
+            ys = np.asarray([np.mean(params['loggs'][algo][params['logname']][i,:]) for i in range(len(xs))])
+            #set yscale to log only to get the time plot in the paper
+            ax.set_yscale('log')
+            if algo == 'LP_50':                
+                ax.plot(xs, ys,label=algonames_new[algo], color = 'k', alpha =0.8 )
+            elif algo == 'LP_100':
+                ax.plot(xs, ys,label=algonames_new[algo], color = 'k', alpha =0.8, marker = 'o' )
+            elif algo == 'Adxopt_50':
+                ax.plot(xs, ys,label=algonames_new[algo], color = 'orange' )
+            elif algo == 'Adxopt_100':
+                ax.plot(xs, ys,label=algonames_new[algo], marker = 'o', color = 'orange' )
+            elif algo == 'Assort-Exact_50':
+                ax.plot(xs, ys,label=algonames_new[algo], color = 'g' )      
+            else:
+                ax.plot(xs, ys,label=algonames_new[algo], marker = "o",  color = 'g' )
+        # print algo, algonames_new[e],ys
+    ax.set_facecolor('white')
+    for spine in ['left', 'bottom']:
+        ax.spines[spine].set_color('k')
+    import matplotlib.ticker as mtick
+    #plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1)) #for timeplot comment this line
+    ax.get_xaxis().set_major_formatter(
+    matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))      
+    plt.rcParams["figure.figsize"] = (8,6)
+    ax.legend(loc='best', bbox_to_anchor=(0.5, 1.05), ncol=3)
+    plt.ylabel(params['ylab'])
+    plt.xlabel(params['xlab'])
+    plt.legend(loc='best', facecolor= 'inherit', framealpha=0.0, frameon=None)
+    plt.xlim(params['xlims'])
+    if params['ylims'] is not None:
+        plt.ylim(params['ylims'])
+    plt.xticks(np.arange(0, 15001, 2500))
+    if params['flag_savefig'] == True:
+        plt.savefig(params['fname'])  
+    plt.show()
+
+
+
+
 #############################################
 
 def get_plots(fname,flag_savefig=False,xlim=5001,loggs=None,
@@ -401,14 +473,14 @@ def get_merged_plots(fname_prefix,fnames,flag_savefig,nest_ncand,xlim,dat):
         get_merged_plot_subroutine(params)
 
 
-def get_static_mnl_plot(fname, fname1,flag_savefig,xlim,savefname):
+def get_static_mnl_plot(fnames,flag_savefig,xlim,savefname):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     colors = 'gr'
     count = 0
-    for i in [fname, fname1]:
-        print(i)
-        loggs = pickle.load(open(fname,'rb')) 
+    for file in fnames:
+        #print(i)
+        loggs = pickle.load(open(file,'rb')) 
         xs = loggs['additional']['prodList']
         ys_lb  = np.asarray([np.percentile(loggs['Static-MNL']['time'][i,:],5) for i in range(len(xs))])
         ys_ub  = np.asarray([np.percentile(loggs['Static-MNL']['time'][i,:],95) for i in range(len(xs))])
@@ -434,6 +506,31 @@ def get_static_mnl_plot(fname, fname1,flag_savefig,xlim,savefname):
     if flag_savefig == True:
         plt.savefig(savefname)  
     # plt.show()
+        
+def get_combined_file(fname_prefix,fnames,capacity):
+    alldata = {}
+    log = collections.OrderedDict() 
+    for e,fname in enumerate(fnames):
+        alldata[e] = pickle.load(open(fname_prefix+fname,'rb'))
+        for i in alldata[e]['additional']['algonames']:
+            log[ i +'_'+str(capacity[e])] = alldata[e][i]
+        log['additional'] = alldata[e]['additional']           
+        log['additional']['algonames'] = [key for key, value in log.items() if key not in ['additional']]     
+    return(log)           
+        
+def get_combined_file_forbarplot(fname_prefix,fnames):
+    alldata = {}
+    plot_params = ['revPctErr','setOlp','time' ]
+    log = collections.OrderedDict() 
+    for e,fname in enumerate(fnames):
+        alldata[e] = pickle.load(open(fname_prefix+fname,'rb'))   
+
+    for i in [key for key, value in alldata[e].items() if key not in ['additional']]: 
+        for j in plot_params:
+            alldata[1][i][j] = np.vstack((alldata[1][i][j], alldata[e][i][j][0])) 
+    alldata[1]['additional']['real_data_list'].append(alldata[0]['additional']['real_data_list'][0])        
+    return alldata[1]
+
 
 if __name__ == '__main__':
 
@@ -465,20 +562,29 @@ if __name__ == '__main__':
 # =============================================================================
 
 
-    ##2. DONE general: freq_item_dataset
-    # get_freqitem_plots('./output/trial_for_ast_utility.pkl',flag_savefig = True)
-    # get_freqitem_plots('./output/gen_loggs_real_ast_upto3_nCand_80_nEst_20_20210108_0151AM_compstep_0p9_hash2.pkl',flag_savefig=True)
-
+    ##2. DONE general: freq_item_dataset   
+    
+    #For just synthetic frequent itemsets
+    #get_freqitem_plots('./output/gen_loggs_real_ast_upto3_nCand_80_nEst_20_20210225_1240PM_allsynthetic_utility.pkl',flag_savefig=True)
+    
+    #For combined tafeng and synthetic frequent itemsets
+    #fname_prefix = './output/'
+    #fnames = ['gen_loggs_real_ast_upto0_nCand_80_nEst_20_20210222_0858PM_0p99_minhash3_late.pkl',
+    #  'gen_loggs_real_ast_upto3_nCand_80_nEst_20_20210225_1240PM_allsynthetic_utility.pkl']
+    #pickle.dump(get_combined_file_forbarplot(fname_prefix, fnames),open('./output/combined_bar_plot.pkl','wb'))
+    #get_freqitem_plots('./output/combined_bar_plot.pkl',flag_savefig=False)
 
 
     ##3. DONE capacity constrained: 
-    # # #bpp
+    # # #bpp 
     # xlim,fname = 20001,'./output/results20170528_final_vs_prod/cap_loggs_bppData_prod_20000_20170529_0459AM.pkl'
     # timedata,opt_ast_lens,data = get_plots_temp(fname=fname,flag_savefig=True,xlim=xlim,
     #     savefname_common='./output/figures/new/cap_real_price_prod')
 
-    # xlim,fname,fname1 = 1001,'./output/cap_loggs_tafeng_prod_1000_20210226_0828PM_cap50_staticmnl_tafeng.pkl', './output/cap_loggs_tafeng_prod_1000_20210226_1035PM_cap100_tafeng_staticmnl.pkl'
-    # get_static_mnl_plot(fname=fname,fname1 = fname1, flag_savefig=True,xlim=xlim,savefname='./output/figures/cap_real_price_prod_staticmnl.png')
+    # #static mnl    
+    # xlim,fnames = 1001, ['./output/cap_loggs_tafeng_prod_1000_20210226_0828PM_cap50_staticmnl_tafeng.pkl', 
+    #'./output/cap_loggs_tafeng_prod_1000_20210226_1035PM_cap100_tafeng_staticmnl.pkl']
+    # get_static_mnl_plot(fnames, flag_savefig=True,xlim=xlim,savefname='./output/figures/cap_real_price_prod_staticmnl.png')
 
     # #synthetic
     # xlim,fname = 20001,'./output/results20170528_final_vs_prod/cap_loggs_synthetic_prod_20000_20170529_1214AM.pkl'
@@ -492,3 +598,15 @@ if __name__ == '__main__':
     #xlim,fname = 15001,'./output/try_me.pkl'
     #timedata,opt_ast_lens,data = get_plots_temp(fname=fname,flag_savefig=True,xlim=xlim,
     #    savefname_common='./output/figures/new/cap_real_price_prod')
+    
+    
+    ##4. Combined plots for capacity constrained:
+    #fname_prefix = './output/final/tafeng/'
+    #fnames = ['cap_loggs_tafeng_prod_15000_20210122_0109PM_cap50_with_all_algos.pkl',
+    #  'cap_loggs_tafeng_prod_15000_20210221_0303PM_cap100_all_algos.pkl']
+    #capacity = [50,100]
+    #pickle.dump(get_combined_file(fname_prefix,fnames,capacity),open('./output/combined_algos_cap_loggs_tafeng'+'.pkl','wb'))
+    
+    #xlim,fname = 15001,'./output/combined_algos_cap_loggs_tafeng.pkl'
+    #timedata,opt_ast_lens,data = get_plots_combined(fname=fname,flag_savefig=True,xlim=xlim,
+    #savefname_common='./output/figures/new/cap_real_price_prod')
