@@ -179,7 +179,7 @@ def generate_instance_general(price_range,prod,genMethod,iterNum,lenFeas=None,re
          
     
 
-def run_prod_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synthetic'):
+def run_prod_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synthetic', correlation = 'utility_based'):
 
   #parameters required
   random.seed(10)
@@ -220,13 +220,14 @@ def run_prod_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synt
       #generating the price
       meta = {'eps':eps}
       if flag_capacitated == True:
-        #file_1 = open("products.pkl",'rb')   
-        #product_choices = pickle.load(file_1)
-        #choices = random.sample(product_choices,prod)
-        #subset = choices  
-        #p,v = get_real_prices_parameters_by_product(subset)
-        #C = prod
-        p,v = generate_instance(price_range,prod,genMethod,t)
+        if genMethod == 'tafeng':   
+            file_1 = open("products.pkl",'rb')   
+            product_choices = pickle.load(file_1)
+            choices = random.sample(product_choices,prod)
+            subset = choices  
+            p,v = get_real_prices_parameters_by_product(subset)
+        else:   
+            p,v = generate_instance(price_range,prod,genMethod,t)
       else:
         p,v,feasibles,C,prod = generate_instance_general(price_range,prod,genMethod,t)
         loggs['additional']['C'][i,t] = C
@@ -363,19 +364,21 @@ def run_lenFeas_experiment(flag_savedata=True,genMethod='synthetic',nEst=20,nCan
 
   return loggs
 
-def run_real_ast_experiment(flag_savedata=True,nEst=20,nCand=80):
+def run_real_ast_experiment(flag_savedata=True,genMethod='synthetic', nEst=20,nCand=80):
 
   #parameters required
   np.random.seed(1000)
   price_range = 1000      #denotes highest possible price of a product
   eps         = 1       #tolerance
-  N           = 50 #   #number of times Monte Carlo simulation will run
-  real_data_list = [
-    {'fname':'freq_itemset_data/retail0p0001_240852_txns88162.csv','isCSV':True,'min_ast_length':3},
-    {'fname':'freq_itemset_data/foodmartFIM0p0001_233231_txns4141.csv','isCSV':True,'min_ast_length':4},
-    {'fname':'freq_itemset_data/chains0p00001_txns1112949.txt','isCSV':False,'min_ast_length':5},
-    {'fname':'freq_itemset_data/OnlineRetail0p000001_txns540455.txt','isCSV':False,'min_ast_length':3}]
-  #real_data_list = [{'fname':'freq_itemset_data/tafeng_final_0p00001_txns119390.txt','isCSV':False,'min_ast_length':8}]
+  N           = 1 #   #number of times Monte Carlo simulation will run
+  if genMethod =='synthetic':  
+    real_data_list = [
+        {'fname':'freq_itemset_data/retail0p0001_240852_txns88162.csv','isCSV':True,'min_ast_length':3},
+        {'fname':'freq_itemset_data/foodmartFIM0p0001_233231_txns4141.csv','isCSV':True,'min_ast_length':4},
+        {'fname':'freq_itemset_data/chains0p00001_txns1112949.txt','isCSV':False,'min_ast_length':5},
+        {'fname':'freq_itemset_data/OnlineRetail0p000001_txns540455.txt','isCSV':False,'min_ast_length':3}]
+  if genMethod == 'tafeng':  
+     real_data_list = [{'fname':'freq_itemset_data/tafeng_final_0p00001_txns119390.txt','isCSV':False,'min_ast_length':8}]
   algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-LSH-G':genAst_AssortLSH,'Assort-Exact-G':genAst_AssortExact, 'Assort-BZ-G':genAst_AssortBZ})
   benchmark   = 'Linear-Search'
   loggs = get_log_dict(real_data_list,N,algos,price_range,eps) #hack
@@ -397,10 +400,10 @@ def run_real_ast_experiment(flag_savedata=True,nEst=20,nCand=80):
       meta = {'eps':eps}
     
     
-      if genMethod =='tafeng':
-          p,v,feasibles,C,prod = generate_instance_general(price_range,None,'tafeng',t,lenFeas=None,real_data=real_data)
+      if genMethod =='synthetic':
+          p,v,feasibles,C,prod = generate_instance_general(price_range,None,'synthetic',t,lenFeas=None,real_data=real_data)
       else:      
-          p,v,feasibles,C,prod = generate_instance_general(price_range,None,'synthetic',t,lenFeas=None,real_data=real_data)  
+          p,v,feasibles,C,prod = generate_instance_general(price_range,None,'tafeng',t,lenFeas=None,real_data=real_data)  
       #
       loggs['additional']['C'][i,t] = C
       meta['feasibles'] = feasibles
@@ -551,29 +554,26 @@ def run_prod_experiment_static_mnl(flag_capacitated=True,flag_savedata=True,genM
 if __name__=='__main__':
 
 
-  #1. General case, dependense on lsh parameters: bpp data and synthetic data
+  #1. General case, dependense on lsh parameters: bpp data, tafeng and synthetic data
 
-  # loggs5 = run_lenFeas_experiment(flag_savedata = True,genMethod='synthetic',nEst=40,nCand=160)
-  # loggs5 = run_lenFeas_experiment(flag_savedata = True,genMethod='synthetic',nEst=100,nCand=200)
-  # loggs5 = run_lenFeas_experiment(flag_savedata = True,genMethod='synthetic',nEst=20,nCand=80)
-  # loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='bppData',nEst=40,nCand=160)
-  # loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='bppData',nEst=100,nCand=200)
-  # loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='bppData',nEst=20,nCand=80)
-   loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='tafeng',nEst=20,nCand=80)
+  # loggs5 = run_lenFeas_experiment(flag_savedata = True,genMethod='bppData',nEst=20,nCand=80)
+  # loggs6 = run_lenFeas_experiment(flag_savedata = True,genMethod='tafeng',nEst=20,nCand=80)
 
 
   #2. General case: frequent itemset data
   
-  #loggs7 = run_real_ast_experiment(flag_savedata = True, nEst=20,nCand=80)
+  #loggs7 = run_real_ast_experiment(flag_savedata = True, genMethod='synthetic', nEst=20,nCand=80)
+  #loggs8 = run_real_ast_experiment(flag_savedata = True, genMethod='tafeng', nEst=20,nCand=80)
 
   #3. Special case (cap constrained): bpp data and synthetic data
-  #  loggs2 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='tafeng')
+  #  loggs2 = run_prod_experiment(flag_capacitated = True,flag_savedata = True, genMethod='tafeng')
 
   # loggs1 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='synthetic')
   #  loggs2 = run_prod_experiment(flag_capacitated = True,flag_savedata = True,genMethod='bppData')
   ## loggs3 = run_prod_experiment(flag_capacitated = False,flag_savedata = True,genMethod='synthetic')
   ## loggs4 = run_prod_experiment(flag_capacitated = False,flag_savedata = True,genMethod='bppData')
 
-
+  #. Static-mnl  
   # loggs2 = run_prod_experiment_static_mnl(flag_capacitated = True,flag_savedata = True,genMethod='tafeng')
+  # loggs2 = run_prod_experiment_static_mnl(flag_capacitated = True,flag_savedata = True,genMethod='bppData')  
   

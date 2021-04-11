@@ -286,7 +286,6 @@ def capAst_AssortBZ(prod, C, p, v, meta):
         return left, right
 
     for i in range(max_iters):
-        #logger.info(f"\niteration: {iter_count}")
         count += 1
         # get Median of Distribution
         median = get_pivot(range_dist)
@@ -318,7 +317,6 @@ def capAst_AssortBZ(prod, C, p, v, meta):
         if (belief_end - belief_start) <= early_termination_width:
             break
 
-    #logger.info(f" Noisy Binary Search Loop Done in %d iterations.." % iter_count)
     timeTaken = time.time()-st
 
     print "\t\tAssortBZ Opt Set Size:",len(best_set)
@@ -413,18 +411,12 @@ def genAst_AssortBZ(prod, C, p, v, meta):
             range_dist[range_idx >= best_set_revenue] += np.log(
                     shift_density_total / len(range_dist[range_idx >= best_set_revenue]))
         # avoid overflows
-        range_dist -= np.max(range_dist)
-        
-        #RANGE.append(range_dist)
-        
-        #BELIEF_INTERVAL.append(get_belief_interval(range_dist))
- 
+        range_dist -= np.max(range_dist) 
         belief_start, belief_end = get_belief_interval(range_dist)
  
         if (belief_end - belief_start) <= early_termination_width:
             break
 
-    #logger.info(f" Noisy Binary Search Loop Done in %d iterations.." % iter_count)
     timeTaken = time.time()-st
 
     
