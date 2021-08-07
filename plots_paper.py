@@ -323,16 +323,21 @@ def get_plots(fname,flag_savefig=False,xlim=5001,loggs=None,
 def get_freqitem_subroutine(params):
 
     loggs = params['loggs']
-    loggs['additional']['algonames'] = ['Assort-LSH-G', 'Assort-BZ-G', 'Assort-Exact-G', 'Linear-Search']
-    #loggs['additional']['algonames_new'] = ['Assort-MNL(approx)','Assort-MNL','Exhaustive','Assort-MNL(BZ)']\
-    loggs['additional']['algonames_new'] = ['Assort-MNL(Approx)','Assort-MNL(BZ)','Assort-MNL','Exhaustive']
-    #loggs['additional']['algonames_new'] = ['Exhaustive','Assort-MNL(BZ)']
+# =============================================================================
+#     loggs['additional']['algonames'] = ['Assort-LSH-G', 'Assort-BZ-G', 'Assort-Exact-G', 'Linear-Search']
+#     #loggs['additional']['algonames_new'] = ['Assort-MNL(approx)','Assort-MNL','Exhaustive','Assort-MNL(BZ)']\
+#     loggs['additional']['algonames_new'] = ['Assort-MNL(Approx)','Assort-MNL(BZ)','Assort-MNL','Exhaustive']
+#     #loggs['additional']['algonames_new'] = ['Exhaustive','Assort-MNL(BZ)']
+# =============================================================================
+    loggs['additional']['algonames'] = ['Assort-LSH-G', 'Assort-BZ-G', 'Linear-Search']
+    loggs['additional']['algonames_new'] = ['Assort-MNL(Approx, Annoy)', 'Assort-MNL(BZ, Annoy)', 'Exhaustive']
+    
     ind = np.arange(len(loggs['additional']['real_data_list']))  # the x locations for the groups
     width = 0.2       # the width of the bars
     fig, ax = plt.subplots()
 
     rects = {}
-    colors = 'rbgkymc'
+    colors = 'rbkymc'
     for e,algoname in enumerate(loggs['additional']['algonames']):
         rects[algoname] = ax.bar(ind+e*width,tuple(np.mean(loggs[algoname][params['logname']][i,:]) for i in ind), width, color=colors[e])
     
@@ -342,7 +347,7 @@ def get_freqitem_subroutine(params):
     ax.set_xticks(ind+1.5*width)
     ax.set_xticklabels( ('Retail', 'Foodmart', 'Chainstore', 'E-commerce','Tafeng') )
     ax.set_facecolor('white')
-    ax.legend( (rects[algoname][0] for algoname in loggs['additional']['algonames']), tuple(loggs['additional']['algonames_new']),loc='best', framealpha=0.0, frameon=None)
+    ax.legend( (rects[algoname][0] for algoname in loggs['additional']['algonames']), tuple(loggs['additional']['algonames_new']),loc='best', framealpha=0.0, frameon=None, fontsize=26)
     plt.rcParams["figure.figsize"] = (12,8)
     import matplotlib.ticker as mtick
 
@@ -359,11 +364,15 @@ def get_freqitem_subroutine(params):
 
     for algoname in loggs['additional']['algonames']:
         autolabel(rects[algoname])
+    plt.xticks(fontsize=26)
+    plt.ylabel(params['ylab'], fontsize=32)
+    plt.yticks(fontsize=28)
+    #plt.ylabel(fontsize=30)    
     for spine in ['left', 'bottom']:
         ax.spines[spine].set_color('k')
     if params['flag_savefig'] == True:
         plt.savefig(params['fname']) 
-    # plt.show()
+    plt.show()
 
 def get_freqitem_plots(fname,flag_savefig=False):
 
@@ -384,7 +393,7 @@ def get_freqitem_plots(fname,flag_savefig=False):
 
     ###plot2 #fname[:-4]+'_revPctErr.png'
     params = {'fname':'./output/figures/gen_ast_real_set_revPctErr.png','flag_savefig':flag_savefig,
-        'loggs':loggs,'ylab':'Pct. Err. in Revenue','logname':'revPctErr','ylim':[0,.2]}
+        'loggs':loggs,'ylab':'Pct. Err. in Revenue','logname':'revPctErr','ylim':[0,.3]}
     get_freqitem_subroutine(params)
 
 
@@ -527,7 +536,7 @@ def get_combined_file_forbarplot(fname_prefix,fnames):
 
     for i in [key for key, value in alldata[e].items() if key not in ['additional']]: 
         for j in plot_params:
-            alldata[1][i][j] = np.vstack((alldata[1][i][j], alldata[e][i][j][0])) 
+            alldata[1][i][j] = np.vstack((alldata[1][i][j], alldata[0][i][j][0])) 
     alldata[1]['additional']['real_data_list'].append(alldata[0]['additional']['real_data_list'][0])        
     return alldata[1]
 
@@ -565,7 +574,7 @@ if __name__ == '__main__':
     ##2. DONE general: freq_item_dataset   
     
     #For just synthetic frequent itemsets
-    #get_freqitem_plots('./output/gen_loggs_real_ast_upto3_nCand_80_nEst_20_20210225_1240PM_allsynthetic_utility.pkl',flag_savefig=True)
+    #get_freqitem_plots('./output/gen_loggs_real_ast_upto3_nCand_80_nEst_20_20210507_0157AM_tol10_n2.pkl',flag_savefig=True)
     
     #For combined tafeng and synthetic frequent itemsets
     #fname_prefix = './output/'
@@ -573,7 +582,16 @@ if __name__ == '__main__':
     #  'gen_loggs_real_ast_upto3_nCand_80_nEst_20_20210225_1240PM_allsynthetic_utility.pkl']
     #pickle.dump(get_combined_file_forbarplot(fname_prefix, fnames),open('./output/combined_bar_plot.pkl','wb'))
     #get_freqitem_plots('./output/combined_bar_plot.pkl',flag_savefig=False)
-
+    
+# =============================================================================
+#     #For combined tafeng and synthetic frequent itemsets
+#     fname_prefix = './output/tolerance_pickles/'
+#     fnames = ['gen_loggs_real_ast_upto0_nCand_80_nEst_500_20210513_1205AM_annoy_nest500_tafeng.pkl',
+#       'gen_loggs_real_ast_upto3_nCand_80_nEst_500_20210512_0835PM_annoy_nest500.pkl']
+#     pickle.dump(get_combined_file_forbarplot(fname_prefix, fnames),open('./output/combined_bar_plot.pkl','wb'))
+#     get_freqitem_plots('./output/combined_bar_plot.pkl',flag_savefig=False)
+# 
+# =============================================================================
 
     ##3. DONE capacity constrained: 
     # # #bpp 
@@ -601,12 +619,12 @@ if __name__ == '__main__':
     
     
     ##4. Combined plots for capacity constrained:
-    #fname_prefix = './output/final/tafeng/'
-    #fnames = ['cap_loggs_tafeng_prod_15000_20210122_0109PM_cap50_with_all_algos.pkl',
-    #  'cap_loggs_tafeng_prod_15000_20210221_0303PM_cap100_all_algos.pkl']
-    #capacity = [50,100]
-    #pickle.dump(get_combined_file(fname_prefix,fnames,capacity),open('./output/combined_algos_cap_loggs_tafeng'+'.pkl','wb'))
+    fname_prefix = './output/final/tafeng/'
+    fnames = ['cap_loggs_tafeng_prod_15000_20210122_0109PM_cap50_with_all_algos.pkl',
+      'cap_loggs_tafeng_prod_15000_20210221_0303PM_cap100_all_algos.pkl']
+    capacity = [50,100]
+    pickle.dump(get_combined_file(fname_prefix,fnames,capacity),open('./output/combined_algos_cap_loggs_tafeng'+'.pkl','wb'))
     
-    #xlim,fname = 15001,'./output/combined_algos_cap_loggs_tafeng.pkl'
-    #timedata,opt_ast_lens,data = get_plots_combined(fname=fname,flag_savefig=True,xlim=xlim,
-    #savefname_common='./output/figures/new/cap_real_price_prod')
+    xlim,fname = 15001,'./output/combined_algos_cap_loggs_tafeng.pkl'
+    timedata,opt_ast_lens,data = get_plots_combined(fname=fname,flag_savefig=True,xlim=xlim,
+    savefname_common='./output/figures/new/cap_real_price_prod')

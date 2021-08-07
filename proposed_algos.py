@@ -52,8 +52,8 @@ def preprocess(prod, C, p, algo, nEst=10,nCand=40,feasibles = None):
     #   print e,np.linalg.norm(p[1:]*feasibles[e]/normConst),np.linalg.norm(pts[e])
     # NearestNeighbors(n_estimators= nEst, n_candidates=nCand, n_neighbors=C)
 
-
-    db.fit(pts) 
+    db.fit(pts)
+    
 
     build_time = time.time() - t0
     print "\t\tIndex build time: ", build_time   
@@ -89,13 +89,13 @@ def get_nn_set(v,p,K, prod, C, db, normConst,algo,feasibles=None,queryTimeLog=0)
     vTemp = np.concatenate((v[1:], -K*v[1:]))
     query = np.concatenate((vTemp, [0])) #appending extra coordinate as recommended by Simple LSH, no normalization being done
 
-    # print "query",query
-    # print "query reshaped", query.reshape(1,-1)
+    #print "query",query
+    #print "query reshaped", query.reshape(1,-1)
 
     t_before = time.time()
     distList, approx_neighbors  = db.kneighbors(query.reshape(1,-1),return_distance=True)
-    queryTimeLog += time.time() - t_before
-
+    queryTimeLog += time.time() - t_before 
+    
     # print "distList",distList
     # print distList<1
     # print 1-distList[0]
@@ -345,9 +345,9 @@ def genAst_AssortBZ(prod, C, p, v, meta):
         if meta['correct_compstep_probability'] >= 0.5:
             compstep_prob = meta['correct_compstep_probability']
 
-    step_width = 1e-1
+    step_width = 1e-2
     max_iters = 1000
-    early_termination_width = 1
+    early_termination_width = meta['eps']
     belief_fraction = 0.95
 
 

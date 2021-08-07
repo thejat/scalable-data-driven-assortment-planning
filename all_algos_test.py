@@ -122,7 +122,7 @@ def get_real_prices_parameters_by_product(subset):
     df = pd.read_csv(fname)
     le = LabelEncoder()
     df['ENCODED_PRODUCT_ID'] = le.fit_transform(df['PRODUCT_ID'])
-    df = df[df['SALES_PRICE'] < 3200]
+    #df = df[df['SALES_PRICE'] < 3200]
     dict1 = df.set_index('ENCODED_PRODUCT_ID').to_dict()['SALES_PRICE']
     df1 = df.groupby(['TRANSACTION_DT','CUSTOMER_ID'], as_index=False)['ENCODED_PRODUCT_ID'].agg(lambda x: list(x))
     df1['ENCODED_PRODUCT_ID'] = df1['ENCODED_PRODUCT_ID'].apply(lambda x:[ int(y) for y in x])  
@@ -185,17 +185,17 @@ def run_prod_experiment(flag_capacitated=True,flag_savedata=True,genMethod='synt
   random.seed(10)
   np.random.seed(1000)
   price_range = 1000      #denotes highest possible price of a product
-  eps         = 0.1       #tolerance
+  eps         = 1       #tolerance
   N           = 50 #   #number of times Monte Carlo simulation will run
   if flag_capacitated == True:
-    C           = 50      #capacity of assortment in [10,20,50,100,200]
+    C           = 100      #capacity of assortment in [10,20,50,100,200]
     if genMethod=='synthetic':
       prodList    = [15000,20000] #[100,200,300] #
     else:
       prodList    = [100, 250, 500, 1000, 3000, 5000, 7000,10000,15000]
         
     #algos = collections.OrderedDict({'LP':capAst_LP})
-    algos = collections.OrderedDict({'Adxopt':capAst_adxopt})#,'LP':capAst_LP,'Assort-Exact':capAst_AssortExact'Adxopt':capAst_adxopt,'Assort-Exact':capAst_AssortExact, 'Static-MNL':capAst_paat}
+    algos = collections.OrderedDict({'Assort-Exact':capAst_AssortExact})#,'LP':capAst_LP,'Assort-Exact':capAst_AssortExact'Adxopt':capAst_adxopt,'Assort-Exact':capAst_AssortExact, 'Static-MNL':capAst_paat}
     benchmark = 'LP'#'Static-MNL'#
     loggs = get_log_dict(prodList,N,algos,price_range,eps,C)
 
@@ -294,10 +294,10 @@ def run_lenFeas_experiment(flag_savedata=True,genMethod='synthetic',nEst=20,nCan
   price_range = 1000      #denotes highest possible price of a product
   eps         = 1       #tolerance
   N           = 50 #   #number of times Monte Carlo simulation will run
-  prod        = 1000
+  prod        = 8000
   lenFeasibles= [100,200,400,800,1600,3200,6400,12800,25600,51200]
   #lenFeasibles= [51200]
-  algos       = collections.OrderedDict({'Linear-Search':genAst_oracle, 'Assort-LSH-G':genAst_AssortLSH, 'Assort-Exact-G':genAst_AssortExact, 'Assort-BZ-G' : genAst_AssortBZ})
+  algos       = collections.OrderedDict({'Assort-LSH-G':genAst_AssortLSH, 'Assort-Exact-G':genAst_AssortExact, 'Assort-BZ-G' : genAst_AssortBZ})
   #algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-LSH-G':genAst_AssortLSH,'Assort-Exact-G':genAst_AssortExact, 'Assort-BZ-G' : genAst_AssortBZ})
   benchmark   = 'Linear-Search'
   loggs = get_log_dict(lenFeasibles,N,algos,price_range,eps) #hack
@@ -370,7 +370,7 @@ def run_real_ast_experiment(flag_savedata=True,genMethod='synthetic', nEst=20,nC
   np.random.seed(1000)
   price_range = 1000      #denotes highest possible price of a product
   eps         = 1       #tolerance
-  N           = 1 #   #number of times Monte Carlo simulation will run
+  N           = 50 #   #number of times Monte Carlo simulation will run
   if genMethod =='synthetic':  
     real_data_list = [
         {'fname':'freq_itemset_data/retail0p0001_240852_txns88162.csv','isCSV':True,'min_ast_length':3},
@@ -379,7 +379,7 @@ def run_real_ast_experiment(flag_savedata=True,genMethod='synthetic', nEst=20,nC
         {'fname':'freq_itemset_data/OnlineRetail0p000001_txns540455.txt','isCSV':False,'min_ast_length':3}]
   if genMethod == 'tafeng':  
      real_data_list = [{'fname':'freq_itemset_data/tafeng_final_0p00001_txns119390.txt','isCSV':False,'min_ast_length':8}]
-  algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-LSH-G':genAst_AssortLSH,'Assort-Exact-G':genAst_AssortExact, 'Assort-BZ-G':genAst_AssortBZ})
+  algos       = collections.OrderedDict({'Linear-Search':genAst_oracle,'Assort-LSH-G':genAst_AssortLSH,'Assort-Exact-G':genAst_AssortExact, 'Assort-BZ-G' : genAst_AssortBZ})
   benchmark   = 'Linear-Search'
   loggs = get_log_dict(real_data_list,N,algos,price_range,eps) #hack
   loggs['additional']['real_data_list'] = real_data_list
@@ -394,7 +394,7 @@ def run_real_ast_experiment(flag_savedata=True,genMethod='synthetic', nEst=20,nC
     t = 0
     while(t<N):
 
-      print 'Iteration number is ', str(t+1),' of ',N,', for real ast data ',real_data['fname']
+      print 'Iteration number is ', str(t+1),' of ',N,', for real ast data ', real_data['fname']
 
       #generating the price
       meta = {'eps':eps}
